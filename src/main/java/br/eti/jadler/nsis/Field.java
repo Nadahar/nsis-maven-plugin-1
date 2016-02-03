@@ -17,7 +17,7 @@ package br.eti.jadler.nsis;
 
 /**
  *
- * @author Jaguaraquem A. Reinaldo <jaguaraquem.adler@biologica.com.br>
+ * @author Jaguaraquem A. Reinaldo <jaguar.adler@gmail.com.br>
  */
 public class Field implements Comparable<Field> {
 
