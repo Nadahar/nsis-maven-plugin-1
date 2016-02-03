@@ -31,7 +31,7 @@ public class Generate extends AbstractMojo {
     @Parameter(defaultValue = "${project.build.directory}", readonly = true)
     private File target;
 
-    @Parameter
+    @Parameter(defaultValue = "$PROGRAMFILES", required = true)
     private String installRoot;
     
     @Parameter(property = "nsis.muiIcon")
@@ -60,6 +60,9 @@ public class Generate extends AbstractMojo {
     
     @Parameter
     private String packageName;
+    
+    @Parameter(defaultValue = "${project.build.finalName}")
+    private String packageFileName;
     
     @Parameter
     private URL helpLink;
