@@ -15,16 +15,19 @@
  */
 package br.eti.jadler.nsis.maven.plugin;
 
+import br.eti.jadler.nsis.Compression;
 import br.eti.jadler.nsis.Field;
 import br.eti.jadler.nsis.InstallOption;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.MavenProject;
 
 /**
  *
@@ -33,29 +36,44 @@ import org.apache.maven.plugins.annotations.Parameter;
 @Mojo(name = "generate", defaultPhase = LifecyclePhase.PREPARE_PACKAGE)
 public class Generate extends AbstractMojo {
 
-//    @Parameter(defaultValue = "${project}", required = true, readonly = true)
-//    private MavenProject project;
-//
-//    @Parameter(defaultValue = "${project.basedir}", readonly = true)
-//    private File basedir;
-//
-//    @Parameter(defaultValue = "${project.build.directory}", readonly = true)
-//    private File target;
-//
+    @Parameter(defaultValue = "${project}", required = true, readonly = true)
+    private MavenProject project;
+
+    @Parameter(defaultValue = "${project.basedir}", readonly = true)
+    private File basedir;
+
+    @Parameter(defaultValue = "${project.build.directory}", readonly = true)
+    private File target;
+
     @Parameter(defaultValue = "${project.build.directory}/InstallOption.ini")
     private File installOptionFile;
 
     @Parameter(defaultValue = "false")
     private Boolean overwriteInstallOptionFile;
-//
-//    @Parameter(defaultValue = "$PROGRAMFILES", required = true)
-//    private String installRoot;
-//    
-//    @Parameter(property = "nsis.muiIcon")
-//    private String icon;
-//    
-//    @Parameter(property = "nsis.muiUnIcon")
-//    private String unIcon;
+
+    @Parameter
+    private String packageName;
+
+    @Parameter
+    private String installDirectory;
+
+    @Parameter
+    private Compression compression;
+
+    @Parameter
+    private String contact;
+
+    @Parameter
+    private String displayName;
+
+    @Parameter(defaultValue = "$PROGRAMFILES", required = true)
+    private String installRoot;
+
+    @Parameter(property = "nsis.muiIcon")
+    private String icon;
+
+    @Parameter(property = "nsis.muiUnIcon")
+    private String unIcon;
 //    
 //    @Parameter
 //    private String extraPreInstallCommand;
@@ -66,38 +84,26 @@ public class Generate extends AbstractMojo {
 //    @Parameter
 //    private String extraUninstallCommand;
 //    
-//    @Parameter
-//    private Boolean enableUninstallBeforeInstall;
-//    
-//    @Parameter
-//    private Boolean modifyPath;
-//    
-//    @Parameter
-//    private String displayName;
-//    
+    @Parameter(defaultValue = "true")
+    private Boolean enableUninstallBeforeInstall;
+
     @Parameter
-    private String packageName;
-//    
-//    @Parameter(defaultValue = "${project.build.finalName}")
-//    private String packageFileName;
-//    
-//    @Parameter
-//    private URL helpLink;
-//    
-//    @Parameter
-//    private URL urlInfoAbout;
-//    
-//    @Parameter
-//    private String contact;
-//    
+    private Boolean modifyPath;
+
+    @Parameter(defaultValue = "${project.build.finalName}")
+    private String packageFileName;
+    
     @Parameter
-    private String installDirectory;
-//    
-//    @Parameter
-//    private String vendor;
-//    
-//    @Parameter
-//    private File outputFileName;
+    private URL helpLink;
+    
+    @Parameter
+    private URL urlInfoAbout;
+    
+    @Parameter
+    private String packageVendor;
+    
+    @Parameter
+    private File outputFileName;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -126,6 +132,10 @@ public class Generate extends AbstractMojo {
         } catch (IOException ex) {
             throw new MojoExecutionException("Unable to generate project script " + installOptionFile.getAbsolutePath(), ex);
         }
+    }
+
+    private void genProjectHeader() {
+
     }
 
 }
