@@ -18,9 +18,9 @@
         </developer>
     </developers>
     
-    <prerequisites>
+<!--    <prerequisites>
         <maven>${maven.version}</maven>
-    </prerequisites>
+    </prerequisites>-->
     
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
