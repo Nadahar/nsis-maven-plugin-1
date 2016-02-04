@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package br.eti.jadler.nsis;
+package br.eti.jadler.nsis.maven.plugin;
 
 /**
  *
  * @author Jaguaraquem A. Reinaldo <jaguar.adler@gmail.com.br>
  */
-public class Compression {
+public class Compressor {
     
     public enum Type {
         ZLIB,
@@ -38,7 +38,7 @@ public class Compression {
         
         compression += isSolid ? " /SOLID" : "";
         compression += isFinal ? " /FINAL" : "";
-        compression += type;
+        compression += " " + type;
         
         return compression;
     }

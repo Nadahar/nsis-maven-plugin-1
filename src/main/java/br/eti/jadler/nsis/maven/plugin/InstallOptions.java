@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package br.eti.jadler.nsis;
+package br.eti.jadler.nsis.maven.plugin;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -26,7 +26,7 @@ import java.util.Collections;
  *
  * @author Jaguaraquem A. Reinaldo <jaguar.adler@gmail.com.br>
  */
-public class InstallOption extends ArrayList<Field> {
+public class InstallOptions extends ArrayList<Field> {
 
     public final void writeToFile(final File file) throws IOException {
         try (final BufferedWriter bw = new BufferedWriter(
@@ -41,9 +41,6 @@ public class InstallOption extends ArrayList<Field> {
                 bw.write(field.toString());
             }
         }
-
-        System.out.println("Done");
-
     }
 
     public final void writeToFile(final String file) throws IOException {
