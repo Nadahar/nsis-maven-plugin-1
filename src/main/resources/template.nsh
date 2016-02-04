@@ -1,11 +1,11 @@
-; Install script designed for a nmake build
+; NSIS install script designed for a nmake build
 
 ;--------------------------------
 ; You must define these values
 
-  !define VERSION "${NSIS_PACKAGE_VERSION}"
-  !define PATCH  "${NSIS_PACKAGE_VERSION_PATCH}"
-  !define INST_DIR "${NSIS_TEMPORARY_DIRECTORY}"
+  !define VERSION "@NSIS_PACKAGE_VERSION@"
+  !define PATCH  "@NSIS_PACKAGE_VERSION_PATCH@"
+  !define INST_DIR "@NSIS_TEMPORARY_DIRECTORY@"
 
 ;--------------------------------
 ;Variables
@@ -25,22 +25,21 @@
   !include "MUI.nsh"
 
   ;Default installation folder
-  InstallDir "${NSIS_INSTALL_ROOT}\${NSIS_PACKAGE_INSTALL_DIRECTORY}"
+  InstallDir "@NSIS_INSTALL_ROOT@\@NSIS_PACKAGE_INSTALL_DIRECTORY@"
 
 ;--------------------------------
 ;General
 
   ;Name and file
-  Name "${NSIS_PACKAGE_NAME}"
-  OutFile "${NSIS_TOPLEVEL_DIRECTORY}/${NSIS_OUTPUT_FILE_NAME}"
+  Name "@NSIS_PACKAGE_NAME@"
+  OutFile "@NSIS_TOPLEVEL_DIRECTORY@/@NSIS_OUTPUT_FILE_NAME@"
 
   ;Set compression
-  SetCompressor ${NSIS_COMPRESSOR}
+  SetCompressor @NSIS_COMPRESSOR@
+  SetCompressorDictSize @NSIS_COMPRESSOR_DIC_SIZE@
 
   ;Require administrator access
   RequestExecutionLevel admin
-
-${NSIS_DEFINES}
 
   !include Sections.nsh
 
@@ -51,7 +50,7 @@ ${NSIS_DEFINES}
 ; inter-component dependencies.
 Var AR_SecFlags
 Var AR_RegFlags
-${NSIS_SECTION_SELECTED_VARS}
+@NSIS_SECTION_SELECTED_VARS@
 
 ; Loads the "selected" flag for the section named SecName into the
 ; variable VarName.
@@ -77,7 +76,7 @@ ${NSIS_SECTION_SELECTED_VARS}
 
   ClearErrors
   ;Reading component status from registry
-  ReadRegDWORD $AR_RegFlags HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NSIS_PACKAGE_INSTALL_REGISTRY_KEY}\Components\${SecName}" "Installed"
+  ReadRegDWORD $AR_RegFlags HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@\Components\${SecName}" "Installed"
   IfErrors "default_${SecName}"
     ;Status will stay default if registry value not found
     ;(component was never installed)
@@ -110,13 +109,13 @@ ${NSIS_SECTION_SELECTED_VARS}
     ;Section is not selected:
     ;Calling Section uninstall macro and writing zero installed flag
     !insertmacro "Remove_${${SecName}}"
-    WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NSIS_PACKAGE_INSTALL_REGISTRY_KEY}\Components\${SecName}" \
+    WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@\Components\${SecName}" \
   "Installed" 0
     Goto "exit_${SecName}"
 
  "leave_${SecName}:"
     ;Section is selected:
-    WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NSIS_PACKAGE_INSTALL_REGISTRY_KEY}\Components\${SecName}" \
+    WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@\Components\${SecName}" \
   "Installed" 1
 
  "exit_${SecName}:"
@@ -496,7 +495,7 @@ Function ConditionalAddToRegisty
   Pop $0
   Pop $1
   StrCmp "$0" "" ConditionalAddToRegisty_EmptyString
-    WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NSIS_PACKAGE_INSTALL_REGISTRY_KEY}" \
+    WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@" \
     "$1" "$0"
     ;MessageBox MB_OK "Set Registry: '$1' to '$0'"
     DetailPrint "Set install registry entry: '$1' to '$0'"
@@ -505,7 +504,7 @@ FunctionEnd
 
 ;--------------------------------
 
-!ifdef ${NSIS_USES_DOWNLOAD}
+!ifdef NSIS_USES_DOWNLOAD
 Function DownloadFile
     IfFileExists $INSTDIR\* +2
     CreateDirectory $INSTDIR
@@ -515,7 +514,7 @@ Function DownloadFile
     IfFileExists $INSTDIR\$0 0 +2
     Return
 
-    StrCpy $1 "${NSIS_DOWNLOAD_SITE}"
+    StrCpy $1 "@NSIS_DOWNLOAD_SITE@"
 
   try_again:
     NSISdl::download "$1/$0" "$INSTDIR\$0"
@@ -532,34 +531,34 @@ FunctionEnd
 
 ;--------------------------------
 ; Installation types
-${NSIS_INSTALLATION_TYPES}
+@NSIS_INSTALLATION_TYPES@
 
 ;--------------------------------
 ; Component sections
-${NSIS_COMPONENT_SECTIONS}
+@NSIS_COMPONENT_SECTIONS@
 
 ;--------------------------------
 ; Define some macro setting for the gui
-${NSIS_INSTALLER_MUI_ICON_CODE}
-${NSIS_INSTALLER_ICON_CODE}
-${NSIS_INSTALLER_MUI_COMPONENTS_DESC}
-${NSIS_INSTALLER_MUI_FINISHPAGE_RUN_CODE}
+@NSIS_INSTALLER_MUI_ICON_CODE@
+@NSIS_INSTALLER_ICON_CODE@
+@NSIS_INSTALLER_MUI_COMPONENTS_DESC@
+@NSIS_INSTALLER_MUI_FINISHPAGE_RUN_CODE@
 
 ;--------------------------------
 ;Pages
   !insertmacro MUI_PAGE_WELCOME
 
-  !insertmacro MUI_PAGE_LICENSE "${NSIS_RESOURCE_FILE_LICENSE}"
+  !insertmacro MUI_PAGE_LICENSE "@NSIS_RESOURCE_FILE_LICENSE@"
   Page custom InstallOptionsPage
   !insertmacro MUI_PAGE_DIRECTORY
 
   ;Start Menu Folder Page Configuration
   !define MUI_STARTMENUPAGE_REGISTRY_ROOT "SHCTX"
-  !define MUI_STARTMENUPAGE_REGISTRY_KEY "Software\${NSIS_PACKAGE_VENDOR}\${NSIS_PACKAGE_INSTALL_REGISTRY_KEY}"
+  !define MUI_STARTMENUPAGE_REGISTRY_KEY "Software\@NSIS_PACKAGE_VENDOR@\@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@"
   !define MUI_STARTMENUPAGE_REGISTRY_VALUENAME "Start Menu Folder"
   !insertmacro MUI_PAGE_STARTMENU Application $STARTMENU_FOLDER
 
-  ${NSIS_PAGE_COMPONENTS}
+  @NSIS_PAGE_COMPONENTS@
 
   !insertmacro MUI_PAGE_INSTFILES
   !insertmacro MUI_PAGE_FINISH
@@ -640,22 +639,22 @@ Section "-Core installation"
   ;Use the entire tree produced by the INSTALL target.  Keep the
   ;list of directories here in sync with the RMDir commands below.
   SetOutPath "$INSTDIR"
-  ${NSIS_EXTRA_PREINSTALL_COMMANDS}
-  ${NSIS_FULL_INSTALL}
+  @NSIS_EXTRA_PREINSTALL_COMMANDS@
+  @NSIS_FULL_INSTALL@
 
   ;Store installation folder
-  WriteRegStr SHCTX "Software\${NSIS_PACKAGE_VENDOR}\${NSIS_PACKAGE_INSTALL_REGISTRY_KEY}" "" $INSTDIR
+  WriteRegStr SHCTX "Software\@NSIS_PACKAGE_VENDOR@\@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@" "" $INSTDIR
 
   ;Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   Push "DisplayName"
-  Push "${NSIS_DISPLAY_NAME}"
+  Push "@NSIS_DISPLAY_NAME@"
   Call ConditionalAddToRegisty
   Push "DisplayVersion"
-  Push "${NSIS_PACKAGE_VERSION}"
+  Push "@NSIS_PACKAGE_VERSION@"
   Call ConditionalAddToRegisty
   Push "Publisher"
-  Push "${NSIS_PACKAGE_VENDOR}"
+  Push "@NSIS_PACKAGE_VENDOR@"
   Call ConditionalAddToRegisty
   Push "UninstallString"
   Push "$INSTDIR\Uninstall.exe"
@@ -664,7 +663,7 @@ Section "-Core installation"
   Push "1"
   Call ConditionalAddToRegisty
 
-  !ifdef ${NSIS_ADD_REMOVE}
+  !ifdef NSIS_ADD_REMOVE
   ;Create add/remove functionality
   Push "ModifyPath"
   Push "$INSTDIR\AddRemove.exe"
@@ -677,24 +676,24 @@ Section "-Core installation"
 
   ; Optional registration
   Push "DisplayIcon"
-  Push "$INSTDIR\${NSIS_INSTALLED_ICON_NAME}"
+  Push "$INSTDIR\@NSIS_INSTALLED_ICON_NAME@"
   Call ConditionalAddToRegisty
   Push "HelpLink"
-  Push "${NSIS_HELP_LINK}"
+  Push "@NSIS_HELP_LINK@"
   Call ConditionalAddToRegisty
   Push "URLInfoAbout"
-  Push "${NSIS_URL_INFO_ABOUT}"
+  Push "@NSIS_URL_INFO_ABOUT@"
   Call ConditionalAddToRegisty
   Push "Contact"
-  Push "${NSIS_CONTACT}"
+  Push "@NSIS_CONTACT@"
   Call ConditionalAddToRegisty
   !insertmacro MUI_INSTALLOPTIONS_READ $INSTALL_DESKTOP "InstallOptions.ini" "Field 5" "State"
   !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
 
   ;Create shortcuts
   CreateDirectory "$SMPROGRAMS\$STARTMENU_FOLDER"
-${NSIS_CREATE_ICONS}
-${NSIS_CREATE_ICONS_EXTRA}
+@NSIS_CREATE_ICONS@
+@NSIS_CREATE_ICONS_EXTRA@
   CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
 
   ;Read a value from an InstallOptions INI file
@@ -721,13 +720,13 @@ ${NSIS_CREATE_ICONS_EXTRA}
 
   !insertmacro MUI_STARTMENU_WRITE_END
 
-${NSIS_EXTRA_INSTALL_COMMANDS}
+@NSIS_EXTRA_INSTALL_COMMANDS@
 
 SectionEnd
 
 Section "-Add to path"
   Push $INSTDIR\bin
-  StrCmp "${NSIS_MODIFY_PATH}" "ON" 0 doNotAddToPath
+  StrCmp "@NSIS_MODIFY_PATH@" "ON" 0 doNotAddToPath
   StrCmp $DO_NOT_ADD_TO_PATH "1" doNotAddToPath 0
     Call AddToPath
   doNotAddToPath:
@@ -736,7 +735,7 @@ SectionEnd
 ;--------------------------------
 ; Create custom pages
 Function InstallOptionsPage
-  !insertmacro MUI_HEADER_TEXT "Install Options" "Choose options for installing ${NSIS_PACKAGE_NAME}"
+  !insertmacro MUI_HEADER_TEXT "Install Options" "Choose options for installing @NSIS_PACKAGE_NAME@"
   !insertmacro MUI_INSTALLOPTIONS_DISPLAY "InstallOptions.ini"
 
 FunctionEnd
@@ -771,14 +770,14 @@ FunctionEnd
 !macro SectionList MacroName
   ;This macro used to perform operation on multiple sections.
   ;List all of your components in following manner here.
-${NSIS_COMPONENT_SECTION_LIST}
+@NSIS_COMPONENT_SECTION_LIST@
 !macroend
 
 Section -FinishComponents
   ;Removes unselected components and writes component status to registry
   !insertmacro SectionList "FinishSection"
 
-!ifdef ${NSIS_ADD_REMOVE}
+!ifdef NSIS_ADD_REMOVE
   ; Get the name of the installer executable
   System::Call 'kernel32::GetModuleFileNameA(i 0, t .R0, i 1024) i r1'
   StrCpy $R3 $R0
@@ -808,40 +807,40 @@ FunctionEnd
 
 Section "Uninstall"
   ReadRegStr $START_MENU SHCTX \
-   "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NSIS_PACKAGE_INSTALL_REGISTRY_KEY}" "StartMenu"
+   "Software\Microsoft\Windows\CurrentVersion\Uninstall\@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@" "StartMenu"
   ;MessageBox MB_OK "Start menu is in: $START_MENU"
   ReadRegStr $DO_NOT_ADD_TO_PATH SHCTX \
-    "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NSIS_PACKAGE_INSTALL_REGISTRY_KEY}" "DoNotAddToPath"
+    "Software\Microsoft\Windows\CurrentVersion\Uninstall\@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@" "DoNotAddToPath"
   ReadRegStr $ADD_TO_PATH_ALL_USERS SHCTX \
-    "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NSIS_PACKAGE_INSTALL_REGISTRY_KEY}" "AddToPathAllUsers"
+    "Software\Microsoft\Windows\CurrentVersion\Uninstall\@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@" "AddToPathAllUsers"
   ReadRegStr $ADD_TO_PATH_CURRENT_USER SHCTX \
-    "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NSIS_PACKAGE_INSTALL_REGISTRY_KEY}" "AddToPathCurrentUser"
+    "Software\Microsoft\Windows\CurrentVersion\Uninstall\@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@" "AddToPathCurrentUser"
   ;MessageBox MB_OK "Add to path: $DO_NOT_ADD_TO_PATH all users: $ADD_TO_PATH_ALL_USERS"
   ReadRegStr $INSTALL_DESKTOP SHCTX \
-    "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NSIS_PACKAGE_INSTALL_REGISTRY_KEY}" "InstallToDesktop"
+    "Software\Microsoft\Windows\CurrentVersion\Uninstall\@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@" "InstallToDesktop"
   ;MessageBox MB_OK "Install to desktop: $INSTALL_DESKTOP "
 
-${NSIS_EXTRA_UNINSTALL_COMMANDS}
+@NSIS_EXTRA_UNINSTALL_COMMANDS@
 
   ;Remove files we installed.
   ;Keep the list of directories here in sync with the File commands above.
-${NSIS_DELETE_FILES}
-${NSIS_DELETE_DIRECTORIES}
+@NSIS_DELETE_FILES@
+@NSIS_DELETE_DIRECTORIES@
 
-!ifdef ${NSIS_ADD_REMOVE}
+!ifdef NSIS_ADD_REMOVE
   ;Remove the add/remove program
   Delete "$INSTDIR\AddRemove.exe"
 !endif
 
   ;Remove the uninstaller itself.
   Delete "$INSTDIR\Uninstall.exe"
-  DeleteRegKey SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NSIS_PACKAGE_INSTALL_REGISTRY_KEY}"
+  DeleteRegKey SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@"
 
   ;Remove the installation directory if it is empty.
   RMDir "$INSTDIR"
 
   ; Remove the registry entries.
-  DeleteRegKey SHCTX "Software\${NSIS_PACKAGE_VENDOR}\${NSIS_PACKAGE_INSTALL_REGISTRY_KEY}"
+  DeleteRegKey SHCTX "Software\@NSIS_PACKAGE_VENDOR@\@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@"
 
   ; Removes all optional components
   !insertmacro SectionList "RemoveSection_NSIS"
@@ -849,8 +848,8 @@ ${NSIS_DELETE_DIRECTORIES}
   !insertmacro MUI_STARTMENU_GETFOLDER Application $MUI_TEMP
 
   Delete "$SMPROGRAMS\$MUI_TEMP\Uninstall.lnk"
-${NSIS_DELETE_ICONS}
-${NSIS_DELETE_ICONS_EXTRA}
+@NSIS_DELETE_ICONS@
+@NSIS_DELETE_ICONS_EXTRA@
 
   ;Delete empty start menu parent diretories
   StrCpy $MUI_TEMP "$SMPROGRAMS\$MUI_TEMP"
@@ -869,7 +868,7 @@ ${NSIS_DELETE_ICONS_EXTRA}
   ; try to fix it.
   StrCpy $MUI_TEMP "$START_MENU"
   Delete "$SMPROGRAMS\$MUI_TEMP\Uninstall.lnk"
-${NSIS_DELETE_ICONS_EXTRA}
+@NSIS_DELETE_ICONS_EXTRA@
 
   ;Delete empty start menu parent diretories
   StrCpy $MUI_TEMP "$SMPROGRAMS\$MUI_TEMP"
@@ -884,7 +883,7 @@ ${NSIS_DELETE_ICONS_EXTRA}
     StrCmp "$MUI_TEMP" "$SMPROGRAMS" secondStartMenuDeleteLoopDone secondStartMenuDeleteLoop
   secondStartMenuDeleteLoopDone:
 
-  DeleteRegKey /ifempty SHCTX "Software\${NSIS_PACKAGE_VENDOR}\${NSIS_PACKAGE_INSTALL_REGISTRY_KEY}"
+  DeleteRegKey /ifempty SHCTX "Software\@NSIS_PACKAGE_VENDOR@\@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@"
 
   Push $INSTDIR\bin
   StrCmp $DO_NOT_ADD_TO_PATH_ "1" doNotRemoveFromPath 0
@@ -903,13 +902,13 @@ SectionEnd
 ; "Program Files" for AllUsers, "My Documents" for JustMe...
 
 Function .onInit
-  StrCmp "${NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL}" "ON" 0 inst
+  StrCmp "@NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL@" "ON" 0 inst
 
-  ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NSIS_PACKAGE_INSTALL_REGISTRY_KEY}" "UninstallString"
+  ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@" "UninstallString"
   StrCmp $0 "" inst
 
   MessageBox MB_YESNOCANCEL|MB_ICONEXCLAMATION \
-  "${NSIS_PACKAGE_NAME} is already installed. $\n$\nDo you want to uninstall the old version before installing the new one?" \
+  "@NSIS_PACKAGE_NAME@ is already installed. $\n$\nDo you want to uninstall the old version before installing the new one?" \
   IDYES uninst IDNO inst
   Abort
 
@@ -935,14 +934,14 @@ inst:
   ; install directory that is expected to be the
   ; default
   StrCpy $IS_DEFAULT_INSTALLDIR 0
-  StrCmp "$INSTDIR" "${NSIS_INSTALL_ROOT}\${NSIS_PACKAGE_INSTALL_DIRECTORY}" 0 +2
+  StrCmp "$INSTDIR" "@NSIS_INSTALL_ROOT@\@NSIS_PACKAGE_INSTALL_DIRECTORY@" 0 +2
     StrCpy $IS_DEFAULT_INSTALLDIR 1
 
   StrCpy $SV_ALLUSERS "JustMe"
   ; if default install dir then change the default
   ; if it is installed for JustMe
   StrCmp "$IS_DEFAULT_INSTALLDIR" "1" 0 +2
-    StrCpy $INSTDIR "$DOCUMENTS\${NSIS_PACKAGE_INSTALL_DIRECTORY}"
+    StrCpy $INSTDIR "$DOCUMENTS\@NSIS_PACKAGE_INSTALL_DIRECTORY@"
 
   ClearErrors
   UserInfo::GetName
@@ -968,9 +967,9 @@ inst:
   done:
   StrCmp $SV_ALLUSERS "AllUsers" 0 +3
     StrCmp "$IS_DEFAULT_INSTALLDIR" "1" 0 +2
-      StrCpy $INSTDIR "${NSIS_INSTALL_ROOT}\${NSIS_PACKAGE_INSTALL_DIRECTORY}"
+      StrCpy $INSTDIR "@NSIS_INSTALL_ROOT@\@NSIS_PACKAGE_INSTALL_DIRECTORY@"
 
-  StrCmp "${NSIS_MODIFY_PATH}" "ON" 0 noOptionsPage
+  StrCmp "@NSIS_MODIFY_PATH@" "ON" 0 noOptionsPage
     !insertmacro MUI_INSTALLOPTIONS_EXTRACT "InstallOptions.ini"
 
   noOptionsPage:
