@@ -28,7 +28,7 @@ public class Compressor {
     }
     
     private Type type = Type.ZLIB;
-    private Integer dicSize = 8;
+    private Integer dictionarySize = 8;
     private boolean isFinal = false;
     private boolean isSolid = false;
 
@@ -51,12 +51,12 @@ public class Compressor {
         this.type = type;
     }
 
-    public Integer getDicSize() {
-        return dicSize;
+    public Integer getDictionarySize() {
+        return dictionarySize;
     }
 
-    public void setDicSize(Integer dicSize) {
-        this.dicSize = dicSize;
+    public void setDictionarySize(Integer dictionarySize) {
+        this.dictionarySize = dictionarySize;
     }
 
     public boolean isFinal() {
