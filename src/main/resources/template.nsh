@@ -4,8 +4,8 @@
 ; You must define these values
 
   !define VERSION "@NSIS_PACKAGE_VERSION@"
-  !define PATCH  "@NSIS_PACKAGE_VERSION_PATCH@"
-  !define INST_DIR "@NSIS_TEMPORARY_DIRECTORY@"
+  ;!define PATCH  "@NSIS_PACKAGE_VERSION_PATCH@"
+  ;!define INST_DIR "@NSIS_TEMPORARY_DIRECTORY@"
 
 ;--------------------------------
 ;Variables
@@ -25,14 +25,15 @@
   !include "MUI.nsh"
 
   ;Default installation folder
-  InstallDir "@NSIS_INSTALL_ROOT@\@NSIS_PACKAGE_INSTALL_DIRECTORY@"
+  InstallDir "@NSIS_INSTALL_ROOT@\@NSIS_INSTALL_DIRECTORY@"
 
 ;--------------------------------
 ;General
 
   ;Name and file
   Name "@NSIS_PACKAGE_NAME@"
-  OutFile "@NSIS_TOPLEVEL_DIRECTORY@/@NSIS_OUTPUT_FILE_NAME@"
+  ;OutFile "@NSIS_TOPLEVEL_DIRECTORY@/@NSIS_OUTPUT_FILE_NAME@"
+  OutFile "@NSIS_OUTPUT_FILE_NAME@"
 
   ;Set compression
   SetCompressor @NSIS_COMPRESSOR@
@@ -539,16 +540,17 @@ FunctionEnd
 
 ;--------------------------------
 ; Define some macro setting for the gui
-@NSIS_INSTALLER_MUI_ICON_CODE@
-@NSIS_INSTALLER_ICON_CODE@
+@NSIS_MUI_ICON@
+@NSIS_MUI_UNICON@
 @NSIS_INSTALLER_MUI_COMPONENTS_DESC@
-@NSIS_INSTALLER_MUI_FINISHPAGE_RUN_CODE@
+@NSIS_MUI_HEADERIMAGE_BITMAP@
+@NSIS_MUI_WELCOMEFINISHPAGE_BITMAP@
 
 ;--------------------------------
 ;Pages
   !insertmacro MUI_PAGE_WELCOME
 
-  !insertmacro MUI_PAGE_LICENSE "@NSIS_RESOURCE_FILE_LICENSE@"
+  @NSIS_RESOURCE_FILE_LICENSE@
   Page custom InstallOptionsPage
   !insertmacro MUI_PAGE_DIRECTORY
 
@@ -558,7 +560,7 @@ FunctionEnd
   !define MUI_STARTMENUPAGE_REGISTRY_VALUENAME "Start Menu Folder"
   !insertmacro MUI_PAGE_STARTMENU Application $STARTMENU_FOLDER
 
-  @NSIS_PAGE_COMPONENTS@
+  ;@NSIS_PAGE_COMPONENTS@
 
   !insertmacro MUI_PAGE_INSTFILES
   !insertmacro MUI_PAGE_FINISH
@@ -629,7 +631,7 @@ FunctionEnd
   ;Keep these lines before any File command
   ;Only for solid compression (by default, solid compression is enabled for BZIP2 and LZMA)
 
-  ReserveFile "InstallOptions.ini"
+  ReserveFile "@NSIS_INSTALL_OPTIONS@"
   !insertmacro MUI_RESERVEFILE_INSTALLOPTIONS
 
 ;--------------------------------
@@ -639,8 +641,8 @@ Section "-Core installation"
   ;Use the entire tree produced by the INSTALL target.  Keep the
   ;list of directories here in sync with the RMDir commands below.
   SetOutPath "$INSTDIR"
-  @NSIS_EXTRA_PREINSTALL_COMMANDS@
-  @NSIS_FULL_INSTALL@
+  ;@NSIS_EXTRA_PREINSTALL_COMMANDS@
+  ;@NSIS_FULL_INSTALL@
 
   ;Store installation folder
   WriteRegStr SHCTX "Software\@NSIS_PACKAGE_VENDOR@\@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@" "" $INSTDIR
@@ -676,7 +678,7 @@ Section "-Core installation"
 
   ; Optional registration
   Push "DisplayIcon"
-  Push "$INSTDIR\@NSIS_INSTALLED_ICON_NAME@"
+  Push "$INSTDIR\"
   Call ConditionalAddToRegisty
   Push "HelpLink"
   Push "@NSIS_HELP_LINK@"
@@ -687,19 +689,19 @@ Section "-Core installation"
   Push "Contact"
   Push "@NSIS_CONTACT@"
   Call ConditionalAddToRegisty
-  !insertmacro MUI_INSTALLOPTIONS_READ $INSTALL_DESKTOP "InstallOptions.ini" "Field 5" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $INSTALL_DESKTOP "@NSIS_INSTALL_OPTIONS@" "Field 5" "State"
   !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
 
   ;Create shortcuts
   CreateDirectory "$SMPROGRAMS\$STARTMENU_FOLDER"
-@NSIS_CREATE_ICONS@
-@NSIS_CREATE_ICONS_EXTRA@
+;@NSIS_CREATE_ICONS@
+;@NSIS_CREATE_ICONS_EXTRA@
   CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
 
   ;Read a value from an InstallOptions INI file
-  !insertmacro MUI_INSTALLOPTIONS_READ $DO_NOT_ADD_TO_PATH "InstallOptions.ini" "Field 2" "State"
-  !insertmacro MUI_INSTALLOPTIONS_READ $ADD_TO_PATH_ALL_USERS "InstallOptions.ini" "Field 3" "State"
-  !insertmacro MUI_INSTALLOPTIONS_READ $ADD_TO_PATH_CURRENT_USER "InstallOptions.ini" "Field 4" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $DO_NOT_ADD_TO_PATH "@NSIS_INSTALL_OPTIONS@" "Field 2" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $ADD_TO_PATH_ALL_USERS "@NSIS_INSTALL_OPTIONS@" "Field 3" "State"
+  !insertmacro MUI_INSTALLOPTIONS_READ $ADD_TO_PATH_CURRENT_USER "@NSIS_INSTALL_OPTIONS@" "Field 4" "State"
 
   ; Write special uninstall registry entries
   Push "StartMenu"
@@ -720,7 +722,7 @@ Section "-Core installation"
 
   !insertmacro MUI_STARTMENU_WRITE_END
 
-@NSIS_EXTRA_INSTALL_COMMANDS@
+;@NSIS_EXTRA_INSTALL_COMMANDS@
 
 SectionEnd
 
@@ -736,7 +738,7 @@ SectionEnd
 ; Create custom pages
 Function InstallOptionsPage
   !insertmacro MUI_HEADER_TEXT "Install Options" "Choose options for installing @NSIS_PACKAGE_NAME@"
-  !insertmacro MUI_INSTALLOPTIONS_DISPLAY "InstallOptions.ini"
+  !insertmacro MUI_INSTALLOPTIONS_DISPLAY "@NSIS_INSTALL_OPTIONS@"
 
 FunctionEnd
 
@@ -820,7 +822,7 @@ Section "Uninstall"
     "Software\Microsoft\Windows\CurrentVersion\Uninstall\@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@" "InstallToDesktop"
   ;MessageBox MB_OK "Install to desktop: $INSTALL_DESKTOP "
 
-@NSIS_EXTRA_UNINSTALL_COMMANDS@
+;@NSIS_EXTRA_UNINSTALL_COMMANDS@
 
   ;Remove files we installed.
   ;Keep the list of directories here in sync with the File commands above.
@@ -848,8 +850,8 @@ Section "Uninstall"
   !insertmacro MUI_STARTMENU_GETFOLDER Application $MUI_TEMP
 
   Delete "$SMPROGRAMS\$MUI_TEMP\Uninstall.lnk"
-@NSIS_DELETE_ICONS@
-@NSIS_DELETE_ICONS_EXTRA@
+;@NSIS_DELETE_ICONS@
+;@NSIS_DELETE_ICONS_EXTRA@
 
   ;Delete empty start menu parent diretories
   StrCpy $MUI_TEMP "$SMPROGRAMS\$MUI_TEMP"
@@ -868,7 +870,7 @@ Section "Uninstall"
   ; try to fix it.
   StrCpy $MUI_TEMP "$START_MENU"
   Delete "$SMPROGRAMS\$MUI_TEMP\Uninstall.lnk"
-@NSIS_DELETE_ICONS_EXTRA@
+;@NSIS_DELETE_ICONS_EXTRA@
 
   ;Delete empty start menu parent diretories
   StrCpy $MUI_TEMP "$SMPROGRAMS\$MUI_TEMP"
@@ -934,14 +936,14 @@ inst:
   ; install directory that is expected to be the
   ; default
   StrCpy $IS_DEFAULT_INSTALLDIR 0
-  StrCmp "$INSTDIR" "@NSIS_INSTALL_ROOT@\@NSIS_PACKAGE_INSTALL_DIRECTORY@" 0 +2
+  StrCmp "$INSTDIR" "@NSIS_INSTALL_ROOT@\@NSIS_INSTALL_DIRECTORY@" 0 +2
     StrCpy $IS_DEFAULT_INSTALLDIR 1
 
   StrCpy $SV_ALLUSERS "JustMe"
   ; if default install dir then change the default
   ; if it is installed for JustMe
   StrCmp "$IS_DEFAULT_INSTALLDIR" "1" 0 +2
-    StrCpy $INSTDIR "$DOCUMENTS\@NSIS_PACKAGE_INSTALL_DIRECTORY@"
+    StrCpy $INSTDIR "$DOCUMENTS\@NSIS_INSTALL_DIRECTORY@"
 
   ClearErrors
   UserInfo::GetName
@@ -967,10 +969,10 @@ inst:
   done:
   StrCmp $SV_ALLUSERS "AllUsers" 0 +3
     StrCmp "$IS_DEFAULT_INSTALLDIR" "1" 0 +2
-      StrCpy $INSTDIR "@NSIS_INSTALL_ROOT@\@NSIS_PACKAGE_INSTALL_DIRECTORY@"
+      StrCpy $INSTDIR "@NSIS_INSTALL_ROOT@\@NSIS_INSTALL_DIRECTORY@"
 
   StrCmp "@NSIS_MODIFY_PATH@" "ON" 0 noOptionsPage
-    !insertmacro MUI_INSTALLOPTIONS_EXTRACT "InstallOptions.ini"
+    !insertmacro MUI_INSTALLOPTIONS_EXTRACT "@NSIS_INSTALL_OPTIONS@"
 
   noOptionsPage:
 FunctionEnd

@@ -17,10 +17,13 @@ package br.eti.jadler.nsis.maven.plugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -40,8 +43,8 @@ public class GenerateMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project}", required = true, readonly = true)
     private MavenProject project;
 
-    @Parameter(property = "nsis.installOptionFile", defaultValue = "${project.build.directory}/InstallOption.ini")
-    private File installOptionFile;
+    @Parameter(property = "nsis.installOption", defaultValue = "${project.build.directory}/InstallOptions.ini")
+    private File installOptions;
 
     /**
      * Overwrite existing files.
@@ -74,10 +77,10 @@ public class GenerateMojo extends AbstractMojo {
      */
     @Parameter(property = "nsis.displayName", defaultValue = "${project.artifactId}")
     private String displayName;
-    
+
     /**
-     * The name of the package file to generate, not including the extension. The
-     * default value is: ${project.build.finalName}
+     * The name of the package file to generate, not including the extension.
+     * The default value is: ${project.build.finalName}
      */
     @Parameter(property = "nsis.packageName", defaultValue = "${project.build.finalName}")
     private String packageName;
@@ -94,28 +97,28 @@ public class GenerateMojo extends AbstractMojo {
      * An icon filename. The name of a *.ico file used as the main icon for the
      * generated install program.
      */
-    @Parameter(property = "nsis.muiIcon", defaultValue = "${NSISDIR}/Contrib/Graphics/Icons/modern-install.ico")
+    @Parameter(property = "nsis.muiIcon", defaultValue = "\\${NSISDIR}/Contrib/Graphics/Icons/modern-install.ico")
     private String muiIcon;
 
     /**
      * An icon filename. The name of a *.ico file used as the main icon for the
      * generated uninstall program.
      */
-    @Parameter(property = "nsis.muiUnIcon", defaultValue = "${NSISDIR}/Contrib/Graphics/Icons/modern-uninstall.ico")
+    @Parameter(property = "nsis.muiUnIcon", defaultValue = "\\${NSISDIR}/Contrib/Graphics/Icons/modern-uninstall.ico")
     private String muiUnIcon;
 
     /**
      * Bitmap image to display on the header of installers pages (recommended
      * size: 150x57 pixels).
      */
-    @Parameter(property = "nsis.muiHeader", defaultValue = "${NSISDIR}/Contrib/Graphics/Header/nsis.bmp")
+    @Parameter(property = "nsis.muiHeader", defaultValue = "\\${NSISDIR}/Contrib/Graphics/Header/nsis.bmp")
     private String muiHeader;
 
     /**
      * Bitmap for the Welcome page and the Finish page (recommended size:
      * 164x314 pixels).
      */
-    @Parameter(property = "nsis.muiPanel", defaultValue = "${NSISDIR}/Contrib/Graphics/Wizard/win.bmp")
+    @Parameter(property = "nsis.muiPanel", defaultValue = "\\${NSISDIR}/Contrib/Graphics/Wizard/win.bmp")
     private String muiPanel;
 
     /**
@@ -139,7 +142,7 @@ public class GenerateMojo extends AbstractMojo {
      * The name of the package file to generate, including the extension. The
      * default value is: ${project.build.finalName}.exe
      */
-    @Parameter(property = "nsis.outputFileName", required = false)
+    @Parameter(property = "nsis.outputFileName", defaultValue = "${project.build.directory}/${project.build.finalName}.exe")
     private String outputFileName;
 
     /**
@@ -166,18 +169,21 @@ public class GenerateMojo extends AbstractMojo {
     @Parameter(property = "nsis.licenseFile", defaultValue = "${project.basedir}/LICENSE")
     private String licenseFile;
 
+    @Parameter(property = "nsis.components")
+    private ArrayList<Component> components;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
 
-        if (!installOptionFile.exists()) {
-            getLog().info("Generating " + installOptionFile.getAbsolutePath());
+        if (!installOptions.exists()) {
+            getLog().info("Generating " + installOptions.getAbsolutePath());
             genInstallOption();
         } else if (overwrite) {
-            getLog().info("Overwriting " + installOptionFile.getAbsolutePath());
+            getLog().info("Overwriting " + installOptions.getAbsolutePath());
             genInstallOption();
         }
 
-        genProjectHeader();
+        genProjectScript();
 
     }
 
@@ -197,13 +203,14 @@ public class GenerateMojo extends AbstractMojo {
         Field f5 = new Field(5, "CheckBox", checkbox, 0, -1, 80, 90, 0);
 
         try {
-            options.writeToFile(installOptionFile);
+            options.writeToFile(installOptions);
         } catch (IOException ex) {
-            throw new MojoExecutionException("Unable to generate project script " + installOptionFile.getAbsolutePath(), ex);
+            throw new MojoExecutionException("Unable to generate project script " + installOptions.getAbsolutePath(), ex);
         }
     }
 
-    private void genProjectHeader() throws MojoExecutionException {
+    private void genProjectScript() throws MojoExecutionException {
+
         final URL template = this.getClass().getClassLoader().getResource("template.nsh");
         final File file = new File(project.getBuild().getDirectory() + "/project.nsi");
         getLog().info("Generating " + file.getAbsolutePath() + " from " + template.getPath());
@@ -214,52 +221,48 @@ public class GenerateMojo extends AbstractMojo {
             final Charset charset = StandardCharsets.UTF_8;
             String content = new String(Files.readAllBytes(file.toPath()), charset);
 
-            content = content.replaceAll("@NSIS_PACKAGE_INSTALL_DIRECTORY@", installDirectory);
+            final String licenseMacro;
+            if (new File(licenseFile).exists()) {
+                licenseMacro = "!insertmacro MUI_PAGE_LICENSE " + licenseFile;
+            } else {
+                licenseMacro = "";
+            }
+
+            String componentSection = "";
+            for (Component component : components) {
+                if (component.getOutputPath() == null) {
+                    component.setOutputPath(installRoot + "/" + installDirectory);
+                }
+                componentSection += component.toString();
+            }
+
+            content = content.replaceAll("@NSIS_COMPONENT_SECTIONS@", componentSection);
             content = content.replaceAll("@NSIS_COMPRESSOR@", compressor.toString());
             content = content.replaceAll("@NSIS_COMPRESSOR_DIC_SIZE@", "" + compressor.getDictionarySize());
             content = content.replaceAll("@NSIS_CONTACT@", contact != null ? contact : "");
+//            content = content.replaceAll("@NSIS_DELETE_FILES@", "Delete \\$INSTDIR/Unspecified\nDelete \\$INSTDIR/lib\nDelete \\$INSTDIR/lib/libTestes.a");
+//            content = content.replaceAll("@NSIS_DELETE_DIRECTORIES@", "RMDir \\$INSTDIR/lib/Testes\nRMDir \\$INSTDIR/lib\nRMDir \\$INSTDIR/Unspecified");
             content = content.replaceAll("@NSIS_DISPLAY_NAME@", displayName);
-            content = content.replaceAll("@NSIS_PACKAGE_NAME@", packageName);
+            content = content.replaceAll("@NSIS_DOWNLOAD_SITE@", "");
+            content = content.replaceAll("@NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL@", enableUninstallBeforeInstall ? "ON" : "OFF");
+            content = content.replaceAll("@NSIS_HELP_LINK@", helpLink != null ? helpLink : "");
+            content = content.replaceAll("@NSIS_INSTALL_DIRECTORY@", installDirectory.replace("/", "\\\\"));
+            content = content.replaceAll("@NSIS_INSTALL_OPTIONS@", installOptions.getName());
             content = content.replaceAll("@NSIS_INSTALL_ROOT@", installRoot);
+            content = content.replaceAll("@NSIS_INSTALLER_MUI_COMPONENTS_DESC@", "!define MUI_COMPONENTSPAGE_NODESC");
+            content = content.replaceAll("@NSIS_MODIFY_PATH@", modifyPath ? "ON" : "OFF");
+            content = content.replaceAll("@NSIS_MUI_HEADERIMAGE_BITMAP@", "!define MUI_HEADERIMAGE_BITMAP " + muiHeader);
             content = content.replaceAll("@NSIS_MUI_ICON@", "!define MUI_ICON " + muiIcon);
             content = content.replaceAll("@NSIS_MUI_UNICON@", "!define MUI_UNICON " + muiUnIcon);
-            content = content.replaceAll("@NSIS_MUI_HEADERIMAGE_BITMAP@", "!define MUI_HEADERIMAGE_BITMAP " + muiHeader);
             content = content.replaceAll("@NSIS_MUI_WELCOMEFINISHPAGE_BITMAP@", "!define MUI_WELCOMEFINISHPAGE_BITMAP " + muiPanel);
-            content = content.replaceAll("@NSIS_MODIFY_PATH@", modifyPath ? "ON" : "OFF");
-            content = content.replaceAll("@NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL@", enableUninstallBeforeInstall ? "ON" : "OFF");
             content = content.replaceAll("@NSIS_OUTPUT_FILE_NAME@", outputFileName != null ? outputFileName : packageName + ".exe");
-            content = content.replaceAll("@NSIS_HELP_LINK@", helpLink != null ? helpLink : "");
-            content = content.replaceAll("@NSIS_URL_INFO_ABOUT@", urlInfoAbout != null ? urlInfoAbout : "");
-            content = content.replaceAll("@NSIS_PACKAGE_VENDOR@", packageVendor != null ? packageVendor : "");
             content = content.replaceAll("@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@", displayName);
-            content = content.replaceAll("@NSIS_DELETE_FILES@", "Delete \\$INSTDIR/Unspecified\nDelete \\$INSTDIR/lib\nDelete \\$INSTDIR/lib/libTestes.a");
-            content = content.replaceAll("@NSIS_DELETE_DIRECTORIES@", "RMDir \\$INSTDIR/lib/Testes\nRMDir \\$INSTDIR/lib\nRMDir \\$INSTDIR/Unspecified");
-            content = content.replaceAll("@NSIS_RESOURCE_FILE_LICENSE@", licenseFile); //named capturing group is missing trailing '}'
+            content = content.replaceAll("@NSIS_PACKAGE_NAME@", packageName);
+            content = content.replaceAll("@NSIS_PACKAGE_VENDOR@", packageVendor != null ? packageVendor : "");
             content = content.replaceAll("@NSIS_PACKAGE_VERSION@", packageVersion);
-            content = content.replaceAll("@NSIS_INSTALLER_MUI_COMPONENTS_DESC@", "MUI_COMPONENTSPAGE_NODESC");
-//
-//        content = content.replaceAll("@NSIS_PACKAGE_VERSION_PATCH@", "0");
+            content = content.replaceAll("@NSIS_RESOURCE_FILE_LICENSE@", licenseMacro);
+            content = content.replaceAll("@NSIS_URL_INFO_ABOUT@", urlInfoAbout != null ? urlInfoAbout : "");
 
-//        content = content.replaceAll("@NSIS_COMPONENT_SECTION_LIST@", "!insertmacro '${MacroName}' 'Unspecified'");
-//        content = content.replaceAll("@NSIS_COMPONENT_SECTIONS@", "é criado uma sessão para cada componente");
-//        content = content.replaceAll("@NSIS_CREATE_ICONS@", "");
-//        content = content.replaceAll("@NSIS_CREATE_ICONS_EXTRA@", "");
-//        content = content.replaceAll("@NSIS_DELETE_ICONS@", "");
-//        content = content.replaceAll("@NSIS_DELETE_ICONS_EXTRA@", "");
-//        content = content.replaceAll("@NSIS_DOWNLOAD_SITE@", "usado em conjunto com NSIS_USES_DOWNLOAD, pode ser usado para baixar o java");
-//        content = content.replaceAll("@NSIS_EXTRA_INSTALL_COMMANDS@", "");
-//        content = content.replaceAll("@NSIS_EXTRA_PREINSTALL_COMMANDS@", "");
-//        content = content.replaceAll("@NSIS_EXTRA_UNINSTALL_COMMANDS@", "");
-//        content = content.replaceAll("@NSIS_FULL_INSTALL@", "");
-//        content = content.replaceAll("@NSIS_INSTALLATION_TYPES@", "InstType 'Developer' (InstType acredito que deva existir sempre)");
-//        content = content.replaceAll("@NSIS_INSTALLED_ICON_NAME@", "");
-//        content = content.replaceAll("@NSIS_INSTALLER_ICON_CODE@", "");
-//        content = content.replaceAll("@NSIS_INSTALLER_MUI_FINISHPAGE_RUN_CODE@", "");
-//        content = content.replaceAll("@NSIS_INSTALLER_MUI_ICON_CODE@", "");
-//        content = content.replaceAll("@NSIS_PAGE_COMPONENTS@", "!insertmacro MUI_PAGE_COMPONENTS, acho que só é incluido caso haja componentes");
-//        content = content.replaceAll("@NSIS_SECTION_SELECTED_VARS@", "");
-//        content = content.replaceAll("@NSIS_TEMPORARY_DIRECTORY@", "talvez seja usado apenas para compilação do script");
-//        content = content.replaceAll("@NSIS_TOPLEVEL_DIRECTORY@", "talvez seja usado apenas para compilação do script");
             Files.write(file.toPath(), content.getBytes(charset));
         } catch (IOException ex) {
             throw new MojoExecutionException("Unable to generate project script " + template.getPath(), ex);
