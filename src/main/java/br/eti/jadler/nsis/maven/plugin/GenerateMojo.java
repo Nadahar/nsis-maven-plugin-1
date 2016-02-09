@@ -15,15 +15,14 @@
  */
 package br.eti.jadler.nsis.maven.plugin;
 
+import java.io.FileFilter;
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
+import java.util.regex.Pattern;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -169,8 +168,10 @@ public class GenerateMojo extends AbstractMojo {
     @Parameter(property = "nsis.licenseFile", defaultValue = "${project.basedir}/LICENSE")
     private String licenseFile;
 
-    @Parameter(property = "nsis.components")
-    private ArrayList<Component> components;
+//    @Parameter(property = "nsis.components")
+//    private ArrayList<Component> components;
+    @Parameter
+    private String[] includes;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -185,6 +186,20 @@ public class GenerateMojo extends AbstractMojo {
 
         genProjectScript();
 
+    }
+
+    private File[] filter(File root, String regex) {
+        if (!root.isDirectory()) {
+            throw new IllegalArgumentException(root + " is not a directory");
+        }
+
+        final Pattern p = Pattern.compile(regex);
+        return root.listFiles(new FileFilter() {
+            @Override
+            public boolean accept(File file) {
+                return p.matcher(file.getName()).matches();
+            }
+        });
     }
 
     private void genInstallOption() throws MojoExecutionException {
@@ -228,23 +243,37 @@ public class GenerateMojo extends AbstractMojo {
                 licenseMacro = "";
             }
 
-            String componentSection = "";
-            for (Component component : components) {
-                if (component.getOutputPath() == null) {
-                    component.setOutputPath(installRoot + "/" + installDirectory);
+            String fullInstall = null;
+            String deleteFiles = null;
+            String removeDirs = null;
+            if (includes != null) {
+                fullInstall = "\tFile /r";
+                deleteFiles = "";
+                removeDirs = "";
+                for (String inc : includes) {
+                    inc = inc.replace("/", "\\");
+                    fullInstall += " \"" + inc + "\"";
+                    if (inc.endsWith("/")) {
+                        removeDirs += "\n\tRMDir \\$INSTDIR\\" + inc;
+                    } else {
+                        deleteFiles += "\n\tDelete \\$INSTDIR\\" + inc;
+                    }
                 }
-                componentSection += component.toString();
+
+                fullInstall = fullInstall.replace("\\\\", "\\");
+                removeDirs = removeDirs.replace("\\\\", "\\");
+                deleteFiles = deleteFiles.replace("\\\\", "\\");
             }
 
-            content = content.replaceAll("@NSIS_COMPONENT_SECTIONS@", componentSection);
             content = content.replaceAll("@NSIS_COMPRESSOR@", compressor.toString());
             content = content.replaceAll("@NSIS_COMPRESSOR_DIC_SIZE@", "" + compressor.getDictionarySize());
             content = content.replaceAll("@NSIS_CONTACT@", contact != null ? contact : "");
-//            content = content.replaceAll("@NSIS_DELETE_FILES@", "Delete \\$INSTDIR/Unspecified\nDelete \\$INSTDIR/lib\nDelete \\$INSTDIR/lib/libTestes.a");
-//            content = content.replaceAll("@NSIS_DELETE_DIRECTORIES@", "RMDir \\$INSTDIR/lib/Testes\nRMDir \\$INSTDIR/lib\nRMDir \\$INSTDIR/Unspecified");
+            content = content.replaceAll("@NSIS_DELETE_FILES@", deleteFiles != null ? deleteFiles : "");
+            content = content.replaceAll("@NSIS_DELETE_DIRECTORIES@", removeDirs != null ? removeDirs : "");
             content = content.replaceAll("@NSIS_DISPLAY_NAME@", displayName);
             content = content.replaceAll("@NSIS_DOWNLOAD_SITE@", "");
             content = content.replaceAll("@NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL@", enableUninstallBeforeInstall ? "ON" : "OFF");
+            content = content.replaceAll("@NSIS_FULL_INSTALL@", fullInstall != null ? fullInstall : "");
             content = content.replaceAll("@NSIS_HELP_LINK@", helpLink != null ? helpLink : "");
             content = content.replaceAll("@NSIS_INSTALL_DIRECTORY@", installDirectory.replace("/", "\\\\"));
             content = content.replaceAll("@NSIS_INSTALL_OPTIONS@", installOptions.getName());
