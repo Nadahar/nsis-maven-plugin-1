@@ -51,7 +51,7 @@
 ; inter-component dependencies.
 Var AR_SecFlags
 Var AR_RegFlags
-@NSIS_SECTION_SELECTED_VARS@
+;@NSIS_SECTION_SELECTED_VARS@
 
 ; Loads the "selected" flag for the section named SecName into the
 ; variable VarName.
@@ -532,11 +532,11 @@ FunctionEnd
 
 ;--------------------------------
 ; Installation types
-@NSIS_INSTALLATION_TYPES@
+;@NSIS_INSTALLATION_TYPES@
 
 ;--------------------------------
 ; Component sections
-@NSIS_COMPONENT_SECTIONS@
+;@NSIS_COMPONENT_SECTIONS@
 
 ;--------------------------------
 ; Define some macro setting for the gui
@@ -642,7 +642,7 @@ Section "-Core installation"
   ;list of directories here in sync with the RMDir commands below.
   SetOutPath "$INSTDIR"
   ;@NSIS_EXTRA_PREINSTALL_COMMANDS@
-  ;@NSIS_FULL_INSTALL@
+  @NSIS_FULL_INSTALL@
 
   ;Store installation folder
   WriteRegStr SHCTX "Software\@NSIS_PACKAGE_VENDOR@\@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@" "" $INSTDIR
@@ -772,7 +772,7 @@ FunctionEnd
 !macro SectionList MacroName
   ;This macro used to perform operation on multiple sections.
   ;List all of your components in following manner here.
-@NSIS_COMPONENT_SECTION_LIST@
+;@NSIS_COMPONENT_SECTION_LIST@
 !macroend
 
 Section -FinishComponents
