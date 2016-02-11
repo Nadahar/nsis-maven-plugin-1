@@ -640,9 +640,9 @@ FunctionEnd
 Section "-Core installation"
   ;Use the entire tree produced by the INSTALL target.  Keep the
   ;list of directories here in sync with the RMDir commands below.
-  SetOutPath "$INSTDIR"
+  ;SetOutPath "$INSTDIR"
   ;@NSIS_EXTRA_PREINSTALL_COMMANDS@
-  @NSIS_FULL_INSTALL@
+@NSIS_FULL_INSTALL@
 
   ;Store installation folder
   WriteRegStr SHCTX "Software\@NSIS_PACKAGE_VENDOR@\@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@" "" $INSTDIR

@@ -15,6 +15,8 @@
  */
 package br.eti.jadler.nsis.maven.plugin;
 
+import org.apache.maven.plugins.annotations.Parameter;
+
 /**
  *
  * @author Jaguaraquem A. Reinaldo <jaguar.adler@gmail.com.br>
@@ -27,10 +29,17 @@ public class Compressor {
         LZMA;
     }
     
-    private Type type = Type.ZLIB;
-    private Integer dictionarySize = 8;
-    private boolean isFinal = false;
-    private boolean isSolid = false;
+    @Parameter(property = "nsis.compressor.type", defaultValue = "ZLIB")
+    private Type type;// = Type.ZLIB;
+    
+    @Parameter(property = "nsis.compressor.dictionarySize", defaultValue = "8")
+    private Integer dictionarySize;// = 8;
+    
+    @Parameter(property = "nsis.compressor.isfinal", defaultValue = "false")
+    private boolean isFinal;// = false;
+    
+    @Parameter(property = "nsis.compressor.issolid", defaultValue = "false")
+    private boolean isSolid;// = false;
 
     @Override
     public String toString() {

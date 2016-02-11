@@ -15,14 +15,13 @@
  */
 package br.eti.jadler.nsis.maven.plugin;
 
-import java.io.FileFilter;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.regex.Pattern;
+import java.util.Arrays;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -30,14 +29,19 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
+import org.codehaus.plexus.util.DirectoryScanner;
 import org.codehaus.plexus.util.FileUtils;
 
 /**
  *
  * @author Jaguaraquem A. Reinaldo <jaguar.adler@gmail.com.br>
  */
-@Mojo(name = "generate", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresProject = false)
+@Mojo(name = "generate", defaultPhase = LifecyclePhase.PACKAGE, requiresProject = false)
 public class GenerateMojo extends AbstractMojo {
+
+    final StringList fullInstall = new StringList();
+    final StringList deleteFiles = new StringList();
+    final StringList removeDirs = new StringList();
 
     @Parameter(defaultValue = "${project}", required = true, readonly = true)
     private MavenProject project;
@@ -194,20 +198,6 @@ public class GenerateMojo extends AbstractMojo {
 
     }
 
-    private File[] filter(File root, String regex) {
-        if (!root.isDirectory()) {
-            throw new IllegalArgumentException(root + " is not a directory");
-        }
-
-        final Pattern p = Pattern.compile(regex);
-        return root.listFiles(new FileFilter() {
-            @Override
-            public boolean accept(File file) {
-                return p.matcher(file.getName()).matches();
-            }
-        });
-    }
-
     private void genInstallOption() throws MojoExecutionException {
         final InstallOptions options = new InstallOptions();
 
@@ -217,11 +207,11 @@ public class GenerateMojo extends AbstractMojo {
         final String addForCurrentUser = "Add " + displayName + " to the system PATH for current user";
         final String checkbox = "Create " + displayName + " Desktop Icon";
 
-        Field f1 = new Field(1, "label", label, 0, -1, 0, 20, null);
-        Field f2 = new Field(2, "radionbutton", doNotAddInPath, 0, -1, 30, 40, 1);
-        Field f3 = new Field(3, "radionbutton", addForAllUsers, 0, -1, 40, 50, 0);
-        Field f4 = new Field(4, "radionbutton", addForCurrentUser, 0, -1, 50, 60, 0);
-        Field f5 = new Field(5, "CheckBox", checkbox, 0, -1, 80, 90, 0);
+        options.add(new Field(1, "label", label, 0, -1, 0, 20, null));
+        options.add(new Field(2, "radionbutton", doNotAddInPath, 0, -1, 30, 40, 1));
+        options.add(new Field(3, "radionbutton", addForAllUsers, 0, -1, 40, 50, 0));
+        options.add(new Field(4, "radionbutton", addForCurrentUser, 0, -1, 50, 60, 0));
+        options.add(new Field(5, "CheckBox", checkbox, 0, -1, 80, 90, 0));
 
         try {
             options.writeToFile(installOptions);
@@ -233,7 +223,8 @@ public class GenerateMojo extends AbstractMojo {
     private void genProjectScript() throws MojoExecutionException {
 
         final URL template = this.getClass().getClassLoader().getResource("template.nsh");
-        final File file = new File(project.getBuild().getDirectory() + "/project.nsi");
+        final String buildDirectory = project.getBuild().getDirectory();
+        final File file = new File(buildDirectory + "/project.nsi");
         getLog().info("Generating " + file.getAbsolutePath() + " from " + template.getPath());
 
         try {
@@ -249,18 +240,35 @@ public class GenerateMojo extends AbstractMojo {
                 licenseMacro = "";
             }
 
-            String fullInstall = "";
-            String deleteFiles = "";
-            String removeDirs = "";
             if (includes != null) {
-                fullInstall = "\tFile /r";
-                for (String inc : includes) {
-                    inc = inc.replace("/", "\\");
-                    fullInstall += " \"" + inc + "\"";
-                    if (inc.endsWith("/")) {
-                        removeDirs += "\n\tRMDir \"\\$INSTDIR\\\\" + inc + "\"";
-                    } else {
-                        deleteFiles += "\n\tDelete \"\\$INSTDIR\\\\" + inc + "\"";
+
+                getLog().debug("Files to be included: " + Arrays.toString(includes));
+
+                DirectoryScanner scanner = new DirectoryScanner();
+                scanner.setIncludes(includes);
+                scanner.setBasedir(buildDirectory);
+                scanner.setCaseSensitive(false);
+                scanner.scan();
+
+                String[] includedFiles = scanner.getIncludedFiles();
+                getLog().debug("IncludedFiles: " + Arrays.toString(includedFiles));
+
+                for (String includedFile : includedFiles) {
+                    File f = new File(buildDirectory + "/" + includedFile);
+                    
+                    while (!f.getAbsolutePath().equals(buildDirectory)) {
+                        if (f.isDirectory()) {
+                            String replace = f.getAbsolutePath().replace(buildDirectory + "/", "").replace("/", "\\\\");
+                            replace = "\tRMDir \"\\$INSTDIR\\\\" + replace + "\"\n";
+                            if (!removeDirs.contains(replace)) {
+                                removeDirs.add(replace);
+                            }
+                        } else if (!fullInstall.contains(includedFile)) {
+                            String str = includedFile.replace("/", "\\\\");
+                            fullInstall.add("\tFile /r \"" + str + "\"\n");
+                            deleteFiles.add("\tDelete \"\\$INSTDIR\\\\" + str + "\"\n");
+                        }
+                        f = f.getParentFile();
                     }
                 }
             }
@@ -268,12 +276,12 @@ public class GenerateMojo extends AbstractMojo {
             templateContent = replace(templateContent, "@NSIS_COMPRESSOR@", compressor.toString());
             templateContent = replace(templateContent, "@NSIS_COMPRESSOR_DIC_SIZE@", "" + compressor.getDictionarySize());
             templateContent = replace(templateContent, "@NSIS_CONTACT@", contact);
-            templateContent = replace(templateContent, "@NSIS_DELETE_FILES@", deleteFiles);
-            templateContent = replace(templateContent, "@NSIS_DELETE_DIRECTORIES@", removeDirs);
+            templateContent = replace(templateContent, "@NSIS_DELETE_FILES@", deleteFiles.toString());
+            templateContent = replace(templateContent, "@NSIS_DELETE_DIRECTORIES@", removeDirs.toString());
             templateContent = replace(templateContent, "@NSIS_DISPLAY_NAME@", displayName);
             templateContent = replace(templateContent, "@NSIS_DOWNLOAD_SITE@", "");
             templateContent = replace(templateContent, "@NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL@", enableUninstallBeforeInstall ? "ON" : "OFF");
-            templateContent = replace(templateContent, "@NSIS_FULL_INSTALL@", fullInstall);
+            templateContent = replace(templateContent, "@NSIS_FULL_INSTALL@", fullInstall.toString());
             templateContent = replace(templateContent, "@NSIS_HELP_LINK@", helpLink);
             templateContent = replace(templateContent, "@NSIS_INSTALL_DIRECTORY@", installDirectory.replace("/", "\\\\"));
             templateContent = replace(templateContent, "@NSIS_INSTALL_OPTIONS@", installOptions.getName());
