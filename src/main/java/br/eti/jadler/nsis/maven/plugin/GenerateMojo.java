@@ -121,6 +121,12 @@ public class GenerateMojo extends AbstractMojo {
     private String muiPanel;
 
     /**
+     * Bitmap image to be used as a splash screen.
+     */
+    @Parameter(property = "nsis.splash")
+    private String splash;
+
+    /**
      * Ask about uninstalling previous versions first. If this is set to “ON”,
      * then an installer will look for previous installed versions and if one is
      * found, ask the user whether to uninstall it before proceeding with the
@@ -234,7 +240,7 @@ public class GenerateMojo extends AbstractMojo {
 
             FileUtils.copyURLToFile(template, file);
             final Charset charset = StandardCharsets.UTF_8;
-            String content = new String(Files.readAllBytes(file.toPath()), charset);
+            String templateContent = new String(Files.readAllBytes(file.toPath()), charset);
 
             final String licenseMacro;
             if (new File(licenseFile).exists()) {
@@ -243,13 +249,11 @@ public class GenerateMojo extends AbstractMojo {
                 licenseMacro = "";
             }
 
-            String fullInstall = null;
-            String deleteFiles = null;
-            String removeDirs = null;
+            String fullInstall = "";
+            String deleteFiles = "";
+            String removeDirs = "";
             if (includes != null) {
                 fullInstall = "\tFile /r";
-                deleteFiles = "";
-                removeDirs = "";
                 for (String inc : includes) {
                     inc = inc.replace("/", "\\");
                     fullInstall += " \"" + inc + "\"";
@@ -261,37 +265,46 @@ public class GenerateMojo extends AbstractMojo {
                 }
             }
 
-            content = content.replaceAll("@NSIS_COMPRESSOR@", compressor.toString());
-            content = content.replaceAll("@NSIS_COMPRESSOR_DIC_SIZE@", "" + compressor.getDictionarySize());
-            content = content.replaceAll("@NSIS_CONTACT@", contact != null ? contact : "");
-            content = content.replaceAll("@NSIS_DELETE_FILES@", deleteFiles != null ? deleteFiles : "");
-            content = content.replaceAll("@NSIS_DELETE_DIRECTORIES@", removeDirs != null ? removeDirs : "");
-            content = content.replaceAll("@NSIS_DISPLAY_NAME@", displayName);
-            content = content.replaceAll("@NSIS_DOWNLOAD_SITE@", "");
-            content = content.replaceAll("@NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL@", enableUninstallBeforeInstall ? "ON" : "OFF");
-            content = content.replaceAll("@NSIS_FULL_INSTALL@", fullInstall != null ? fullInstall : "");
-            content = content.replaceAll("@NSIS_HELP_LINK@", helpLink != null ? helpLink : "");
-            content = content.replaceAll("@NSIS_INSTALL_DIRECTORY@", installDirectory.replace("/", "\\\\"));
-            content = content.replaceAll("@NSIS_INSTALL_OPTIONS@", installOptions.getName());
-            content = content.replaceAll("@NSIS_INSTALL_ROOT@", installRoot);
-            content = content.replaceAll("@NSIS_INSTALLER_MUI_COMPONENTS_DESC@", "!define MUI_COMPONENTSPAGE_NODESC");
-            content = content.replaceAll("@NSIS_MODIFY_PATH@", modifyPath ? "ON" : "OFF");
-            content = content.replaceAll("@NSIS_MUI_HEADERIMAGE_BITMAP@", "!define MUI_HEADERIMAGE_BITMAP " + muiHeader);
-            content = content.replaceAll("@NSIS_MUI_ICON@", "!define MUI_ICON " + muiIcon);
-            content = content.replaceAll("@NSIS_MUI_UNICON@", "!define MUI_UNICON " + muiUnIcon);
-            content = content.replaceAll("@NSIS_MUI_WELCOMEFINISHPAGE_BITMAP@", "!define MUI_WELCOMEFINISHPAGE_BITMAP " + muiPanel);
-            content = content.replaceAll("@NSIS_OUTPUT_FILE_NAME@", outputFileName != null ? outputFileName : packageName + ".exe");
-            content = content.replaceAll("@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@", displayName);
-            content = content.replaceAll("@NSIS_PACKAGE_NAME@", packageName);
-            content = content.replaceAll("@NSIS_PACKAGE_VENDOR@", packageVendor != null ? packageVendor : "");
-            content = content.replaceAll("@NSIS_PACKAGE_VERSION@", packageVersion);
-            content = content.replaceAll("@NSIS_RESOURCE_FILE_LICENSE@", licenseMacro);
-            content = content.replaceAll("@NSIS_URL_INFO_ABOUT@", urlInfoAbout != null ? urlInfoAbout : "");
+            templateContent = replace(templateContent, "@NSIS_COMPRESSOR@", compressor.toString());
+            templateContent = replace(templateContent, "@NSIS_COMPRESSOR_DIC_SIZE@", "" + compressor.getDictionarySize());
+            templateContent = replace(templateContent, "@NSIS_CONTACT@", contact);
+            templateContent = replace(templateContent, "@NSIS_DELETE_FILES@", deleteFiles);
+            templateContent = replace(templateContent, "@NSIS_DELETE_DIRECTORIES@", removeDirs);
+            templateContent = replace(templateContent, "@NSIS_DISPLAY_NAME@", displayName);
+            templateContent = replace(templateContent, "@NSIS_DOWNLOAD_SITE@", "");
+            templateContent = replace(templateContent, "@NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL@", enableUninstallBeforeInstall ? "ON" : "OFF");
+            templateContent = replace(templateContent, "@NSIS_FULL_INSTALL@", fullInstall);
+            templateContent = replace(templateContent, "@NSIS_HELP_LINK@", helpLink);
+            templateContent = replace(templateContent, "@NSIS_INSTALL_DIRECTORY@", installDirectory.replace("/", "\\\\"));
+            templateContent = replace(templateContent, "@NSIS_INSTALL_OPTIONS@", installOptions.getName());
+            templateContent = replace(templateContent, "@NSIS_INSTALL_ROOT@", installRoot);
+            templateContent = replace(templateContent, "@NSIS_INSTALLER_MUI_COMPONENTS_DESC@", "!define MUI_COMPONENTSPAGE_NODESC");
+            templateContent = replace(templateContent, "@NSIS_MODIFY_PATH@", modifyPath ? "ON" : "OFF");
+            templateContent = replace(templateContent, "@NSIS_MUI_HEADERIMAGE_BITMAP@", "!define MUI_HEADERIMAGE_BITMAP " + muiHeader);
+            templateContent = replace(templateContent, "@NSIS_MUI_ICON@", "!define MUI_ICON " + muiIcon);
+            templateContent = replace(templateContent, "@NSIS_MUI_UNICON@", "!define MUI_UNICON " + muiUnIcon);
+            templateContent = replace(templateContent, "@NSIS_MUI_WELCOMEFINISHPAGE_BITMAP@", "!define MUI_WELCOMEFINISHPAGE_BITMAP " + muiPanel);
+            templateContent = replace(templateContent, "@NSIS_OUTPUT_FILE_NAME@", outputFileName);
+            templateContent = replace(templateContent, "@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@", displayName);
+            templateContent = replace(templateContent, "@NSIS_PACKAGE_NAME@", packageName);
+            templateContent = replace(templateContent, "@NSIS_PACKAGE_VENDOR@", packageVendor);
+            templateContent = replace(templateContent, "@NSIS_PACKAGE_VERSION@", packageVersion);
+            templateContent = replace(templateContent, "@NSIS_RESOURCE_FILE_LICENSE@", licenseMacro);
+            templateContent = replace(templateContent, "@NSIS_SPLASH_IMAGE@", splash);
+            templateContent = replace(templateContent, "@NSIS_URL_INFO_ABOUT@", urlInfoAbout);
 
-            Files.write(file.toPath(), content.getBytes(charset));
+            Files.write(file.toPath(), templateContent.getBytes(charset));
         } catch (IOException ex) {
             throw new MojoExecutionException("Unable to generate project script " + template.getPath(), ex);
         }
+    }
+
+    private String replace(String string, String regex, String replacament) {
+        if (replacament == null) {
+            replacament = "";
+        }
+        getLog().debug("Replacing " + regex + " with " + replacament);
+        return string.replaceAll(regex, replacament);
     }
 
 }

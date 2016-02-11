@@ -904,6 +904,13 @@ SectionEnd
 ; "Program Files" for AllUsers, "My Documents" for JustMe...
 
 Function .onInit
+  StrCmp "@NSIS_SPLASH_IMAGE@" "" nosplash 0
+  InitPluginsDir
+  IfSilent nosplash
+  File /oname=$PLUGINSDIR\splash.bmp "@NSIS_SPLASH_IMAGE@"
+        advsplash::show 1000 600 400 -1 $PLUGINSDIR\splash
+        Pop $0
+nosplash:
   StrCmp "@NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL@" "ON" 0 inst
 
   ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@" "UninstallString"
