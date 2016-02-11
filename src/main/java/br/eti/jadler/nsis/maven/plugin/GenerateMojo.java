@@ -254,8 +254,21 @@ public class GenerateMojo extends AbstractMojo {
                 getLog().debug("IncludedFiles: " + Arrays.toString(includedFiles));
 
                 for (String includedFile : includedFiles) {
+
+                    if (!fullInstall.contains(includedFile)) {
+                        int lastIndexOf = includedFile.lastIndexOf("/");
+                        if (lastIndexOf > 0) {
+                            fullInstall.add("\tSetOutPath \"\\$INSTDIR\\\\" + includedFile.substring(0, lastIndexOf) + "\"\n");
+                        } else {
+                            fullInstall.add("\tSetOutPath \"\\$INSTDIR\"\n");
+                        }
+                        String str = includedFile.replace("/", "\\\\");
+                        fullInstall.add("\tFile /r \"" + str + "\"\n");
+                        deleteFiles.add("\tDelete \"\\$INSTDIR\\\\" + str + "\"\n");
+                    }
+
                     File f = new File(buildDirectory + "/" + includedFile);
-                    
+
                     while (!f.getAbsolutePath().equals(buildDirectory)) {
                         if (f.isDirectory()) {
                             String replace = f.getAbsolutePath().replace(buildDirectory + "/", "").replace("/", "\\\\");
@@ -263,10 +276,6 @@ public class GenerateMojo extends AbstractMojo {
                             if (!removeDirs.contains(replace)) {
                                 removeDirs.add(replace);
                             }
-                        } else if (!fullInstall.contains(includedFile)) {
-                            String str = includedFile.replace("/", "\\\\");
-                            fullInstall.add("\tFile /r \"" + str + "\"\n");
-                            deleteFiles.add("\tDelete \"\\$INSTDIR\\\\" + str + "\"\n");
                         }
                         f = f.getParentFile();
                     }
