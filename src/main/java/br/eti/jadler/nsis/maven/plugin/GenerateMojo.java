@@ -254,15 +254,11 @@ public class GenerateMojo extends AbstractMojo {
                     inc = inc.replace("/", "\\");
                     fullInstall += " \"" + inc + "\"";
                     if (inc.endsWith("/")) {
-                        removeDirs += "\n\tRMDir \\$INSTDIR\\" + inc;
+                        removeDirs += "\n\tRMDir \"\\$INSTDIR\\\\" + inc + "\"";
                     } else {
-                        deleteFiles += "\n\tDelete \\$INSTDIR\\" + inc;
+                        deleteFiles += "\n\tDelete \"\\$INSTDIR\\\\" + inc + "\"";
                     }
                 }
-
-                fullInstall = fullInstall.replace("\\\\", "\\");
-                removeDirs = removeDirs.replace("\\\\", "\\");
-                deleteFiles = deleteFiles.replace("\\\\", "\\");
             }
 
             content = content.replaceAll("@NSIS_COMPRESSOR@", compressor.toString());

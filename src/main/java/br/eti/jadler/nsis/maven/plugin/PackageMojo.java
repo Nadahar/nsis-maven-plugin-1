@@ -20,12 +20,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import static java.lang.Compiler.command;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -50,32 +46,27 @@ public class PackageMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         try {
-            List<String> commands = new ArrayList<>();
+            final List<String> commands = new ArrayList<>();
             commands.add(makensis);
             commands.add("project.nsi");
 
-            ProcessBuilder builder = new ProcessBuilder(commands);
-            String directory = project.getBuild().getDirectory();
-            getLog().info("Working directory: " + directory);
+            final ProcessBuilder builder = new ProcessBuilder(commands);
+            final String directory = project.getBuild().getDirectory();
             builder.directory(new File(directory));
             builder.redirectErrorStream(true);
 
-            long start = System.currentTimeMillis();
-            Process process = builder.start();
+            final Process process = builder.start();
 
-            InputStream is = process.getInputStream();
-            InputStreamReader isr = new InputStreamReader(is);
-            BufferedReader br = new BufferedReader(isr);
+            final InputStream is = process.getInputStream();
+            final InputStreamReader isr = new InputStreamReader(is);
+            final BufferedReader br = new BufferedReader(isr);
             String line;
-            System.out.printf("Output of running %s is:\n", Arrays.toString(commands.toArray()));
             while ((line = br.readLine()) != null) {
                 System.out.println(line);
             }
 
-            long end = System.currentTimeMillis();
-
         } catch (IOException ex) {
-            Logger.getLogger(PackageMojo.class.getName()).log(Level.SEVERE, null, ex);
+            getLog().warn(ex);
         }
     }
 
