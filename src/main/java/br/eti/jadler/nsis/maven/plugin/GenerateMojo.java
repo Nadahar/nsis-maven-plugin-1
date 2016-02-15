@@ -172,6 +172,30 @@ public class GenerateMojo extends AbstractMojo {
     @Parameter(property = "nsis.packageVendor")
     private String packageVendor;
 
+    /**
+     * Extra post install commands
+     */
+    @Parameter
+    private String[] extraInstallCommands;
+
+    /**
+     * Extra pre install commands
+     */
+    @Parameter
+    private String[] extraPreInstallCommands;
+
+    /**
+     * Execute and Wait
+     */
+    @Parameter
+    private EmbededInstaller[] embededInstallers;
+
+    /**
+     * Extra post uninstall commands
+     */
+    @Parameter
+    private String[] extraUninstallCommands;
+    
     @Parameter(property = "nsis.packageVersion", defaultValue = "${project.version}", required = true)
     private String packageVersion;
 
@@ -201,16 +225,16 @@ public class GenerateMojo extends AbstractMojo {
     private void genInstallOption() throws MojoExecutionException {
         final InstallOptions options = new InstallOptions();
 
-        final String label = "By default " + installDirectory + " does not add its directory to the system PATH.";
+        final String label = "By default " + installDirectory + " add its directory to the system PATH for all users.";
         final String doNotAddInPath = "Do not add " + displayName + " to the system PATH";
         final String addForAllUsers = "Add " + displayName + " to the system PATH for all users";
         final String addForCurrentUser = "Add " + displayName + " to the system PATH for current user";
         final String checkbox = "Create " + displayName + " Desktop Icon";
 
         options.add(new Field(1, "label", label, 0, -1, 0, 20, null));
-        options.add(new Field(2, "radionbutton", doNotAddInPath, 0, -1, 30, 40, 1));
-        options.add(new Field(3, "radionbutton", addForAllUsers, 0, -1, 40, 50, 0));
-        options.add(new Field(4, "radionbutton", addForCurrentUser, 0, -1, 50, 60, 0));
+        options.add(new Field(2, "radiobutton", doNotAddInPath, 0, -1, 30, 40, 0));
+        options.add(new Field(3, "radiobutton", addForAllUsers, 0, -1, 40, 50, 1));
+        options.add(new Field(4, "radiobutton", addForCurrentUser, 0, -1, 50, 60, 0));
         options.add(new Field(5, "CheckBox", checkbox, 0, -1, 80, 90, 0));
 
         try {
@@ -281,6 +305,31 @@ public class GenerateMojo extends AbstractMojo {
                     }
                 }
             }
+            
+            String installCommands = "";
+            if (extraInstallCommands != null) {
+                for (String command : extraInstallCommands) {
+                    installCommands += command + "\n";
+                }
+            }
+            
+            String preInstallCommands = "";
+            if (extraPreInstallCommands != null) {
+                for (String command : extraPreInstallCommands) {
+                    preInstallCommands += command + "\n";
+                }
+            }
+            
+            String uninstallCommands = "";
+            if (extraUninstallCommands != null) {
+                for (String command : extraUninstallCommands) {
+                    uninstallCommands += command + "\n";
+                }
+            }
+            
+            for (EmbededInstaller embededInstaller : embededInstallers) {
+                
+            }
 
             templateContent = replace(templateContent, "@NSIS_COMPRESSOR@", compressor.toString());
             templateContent = replace(templateContent, "@NSIS_COMPRESSOR_DIC_SIZE@", "" + compressor.getDictionarySize());
@@ -289,7 +338,11 @@ public class GenerateMojo extends AbstractMojo {
             templateContent = replace(templateContent, "@NSIS_DELETE_DIRECTORIES@", removeDirs.toString());
             templateContent = replace(templateContent, "@NSIS_DISPLAY_NAME@", displayName);
             templateContent = replace(templateContent, "@NSIS_DOWNLOAD_SITE@", "");
+            templateContent = replace(templateContent, "@NSIS_EMBEDED_INSTALLER@", );
             templateContent = replace(templateContent, "@NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL@", enableUninstallBeforeInstall ? "ON" : "OFF");
+            templateContent = replace(templateContent, "@NSIS_EXTRA_INSTALL_COMMANDS@", installCommands);
+            templateContent = replace(templateContent, "@NSIS_EXTRA_PREINSTALL_COMMANDS@", preInstallCommands);
+            templateContent = replace(templateContent, "@NSIS_EXTRA_UNINSTALL_COMMANDS@", uninstallCommands);
             templateContent = replace(templateContent, "@NSIS_FULL_INSTALL@", fullInstall.toString());
             templateContent = replace(templateContent, "@NSIS_HELP_LINK@", helpLink);
             templateContent = replace(templateContent, "@NSIS_INSTALL_DIRECTORY@", installDirectory.replace("/", "\\\\"));

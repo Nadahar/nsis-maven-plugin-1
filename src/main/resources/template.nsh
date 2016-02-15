@@ -640,8 +640,11 @@ FunctionEnd
 Section "-Core installation"
   ;Use the entire tree produced by the INSTALL target.  Keep the
   ;list of directories here in sync with the RMDir commands below.
+;@NSIS_EXTRA_PREINSTALL_COMMANDS@
+
+@NSIS_EMBEDED_INSTALLER@
+
   ;SetOutPath "$INSTDIR"
-  ;@NSIS_EXTRA_PREINSTALL_COMMANDS@
 @NSIS_FULL_INSTALL@
 
   ;Store installation folder
@@ -722,12 +725,13 @@ Section "-Core installation"
 
   !insertmacro MUI_STARTMENU_WRITE_END
 
-;@NSIS_EXTRA_INSTALL_COMMANDS@
+@NSIS_EXTRA_INSTALL_COMMANDS@
 
 SectionEnd
 
 Section "-Add to path"
-  Push $INSTDIR\bin
+  ;Push $INSTDIR\bin
+  Push $INSTDIR
   StrCmp "@NSIS_MODIFY_PATH@" "ON" 0 doNotAddToPath
   StrCmp $DO_NOT_ADD_TO_PATH "1" doNotAddToPath 0
     Call AddToPath
@@ -822,7 +826,7 @@ Section "Uninstall"
     "Software\Microsoft\Windows\CurrentVersion\Uninstall\@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@" "InstallToDesktop"
   ;MessageBox MB_OK "Install to desktop: $INSTALL_DESKTOP "
 
-;@NSIS_EXTRA_UNINSTALL_COMMANDS@
+@NSIS_EXTRA_UNINSTALL_COMMANDS@
 
   ;Remove files we installed.
   ;Keep the list of directories here in sync with the File commands above.
@@ -887,7 +891,8 @@ Section "Uninstall"
 
   DeleteRegKey /ifempty SHCTX "Software\@NSIS_PACKAGE_VENDOR@\@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@"
 
-  Push $INSTDIR\bin
+  ;Push $INSTDIR\bin
+  Push $INSTDIR
   StrCmp $DO_NOT_ADD_TO_PATH_ "1" doNotRemoveFromPath 0
     Call un.RemoveFromPath
   doNotRemoveFromPath:
