@@ -637,7 +637,27 @@ FunctionEnd
 ;--------------------------------
 ;Installer Sections
 
+
+
 Section "-Core installation"
+
+  !define JRE_VERSION 1.6
+
+  ReadRegStr $2 HKLM "SOFTWARE\JavaSoft\Java Runtime Environment" "CurrentVersion"
+  StrCmp $2 ${JRE_VERSION} done
+
+  MessageBox MB_OK "@NSIS_PACKAGE_NAME@ uses Java ${JRE_VERSION}, it will now be installed"
+  File /oname=$PLUGINSDIR\jre.exe "jre.exe"
+  ExecWait "$PLUGINSDIR\jre.exe /quiet /passive"
+
+  Push "$PROGRAMSFILE\Java\jre"
+  Call AddToPath
+
+  Push "$PROGRAMSFILE\Java\jre\bin"
+  Call AddToPath
+
+  done:
+
   ;Use the entire tree produced by the INSTALL target.  Keep the
   ;list of directories here in sync with the RMDir commands below.
 ;@NSIS_EXTRA_PREINSTALL_COMMANDS@
@@ -896,6 +916,13 @@ Section "Uninstall"
   StrCmp $DO_NOT_ADD_TO_PATH_ "1" doNotRemoveFromPath 0
     Call un.RemoveFromPath
   doNotRemoveFromPath:
+
+  Push $PROGRAMSFILE\Java\jre
+  Call un.RemoveFromPath
+
+  Push $PROGRAMSFILE\Java\jre\bin
+  Call un.RemoveFromPath
+
 SectionEnd
 
 ;--------------------------------

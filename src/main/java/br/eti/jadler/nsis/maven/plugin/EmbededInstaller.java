@@ -52,7 +52,6 @@ public class EmbededInstaller {
         execWait += "\"";
         
         if (addToPath && forAllUsers) {
-            
         } else if (addToPath && !forAllUsers) {
             
         }
