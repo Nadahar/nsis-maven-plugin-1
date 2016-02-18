@@ -22,6 +22,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.Properties;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -49,12 +51,11 @@ public class GenerateMojo extends AbstractMojo {
     @Parameter(property = "nsis.installOption", defaultValue = "${project.build.directory}/InstallOptions.ini")
     private File installOptions;
 
-    /**
-     * Overwrite existing files.
-     */
-    @Parameter(property = "nsis.overwriteInstallOptionFile", defaultValue = "false")
-    private Boolean overwrite;
-
+//    /**
+//     * Overwrite existing files.
+//     */
+//    @Parameter(property = "nsis.overwriteInstallOptionFile", defaultValue = "false")
+//    private Boolean overwrite;
     /**
      * Installation directory on the target system.
      */
@@ -73,6 +74,15 @@ public class GenerateMojo extends AbstractMojo {
      */
     @Parameter(property = "nsis.contact")
     private String contact;
+
+    @Parameter
+    private Properties defines;
+
+    @Parameter
+    private String[] headers;
+
+    @Parameter
+    private String[] includes;
 
     /**
      * The title displayed at the top of the installer and in the Windows
@@ -176,7 +186,7 @@ public class GenerateMojo extends AbstractMojo {
      * Extra post install commands
      */
     @Parameter
-    private String[] extraInstallCommands;
+    private String[] extraPostInstallCommands;
 
     /**
      * Extra pre install commands
@@ -194,30 +204,17 @@ public class GenerateMojo extends AbstractMojo {
      * Extra post uninstall commands
      */
     @Parameter
-    private String[] extraUninstallCommands;
-    
+    private String[] extraPreUninstallCommands;
+
     @Parameter(property = "nsis.packageVersion", defaultValue = "${project.version}", required = true)
     private String packageVersion;
 
     @Parameter(property = "nsis.licenseFile", defaultValue = "${project.basedir}/LICENSE")
     private String licenseFile;
 
-//    @Parameter(property = "nsis.components")
-//    private ArrayList<Component> components;
-    @Parameter
-    private String[] includes;
-
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-
-        if (!installOptions.exists()) {
-            getLog().info("Generating " + installOptions.getAbsolutePath());
-            genInstallOption();
-        } else if (overwrite) {
-            getLog().info("Overwriting " + installOptions.getAbsolutePath());
-            genInstallOption();
-        }
-
+        genInstallOption();
         genProjectScript();
 
     }
@@ -264,6 +261,13 @@ public class GenerateMojo extends AbstractMojo {
                 licenseMacro = "";
             }
 
+            String includeHeaders = "";
+            if (headers != null) {
+                for (String header : headers) {
+                    includeHeaders += "\n!include \"" + header + "\"";
+                }
+            }
+
             if (includes != null) {
 
                 getLog().debug("Files to be included: " + Arrays.toString(includes));
@@ -305,46 +309,68 @@ public class GenerateMojo extends AbstractMojo {
                     }
                 }
             }
-            
-            String installCommands = "";
-            if (extraInstallCommands != null) {
-                for (String command : extraInstallCommands) {
-                    installCommands += command + "\n";
-                }
-            }
-            
+
             String preInstallCommands = "";
             if (extraPreInstallCommands != null) {
                 for (String command : extraPreInstallCommands) {
                     preInstallCommands += command + "\n";
                 }
             }
-            
-            String uninstallCommands = "";
-            if (extraUninstallCommands != null) {
-                for (String command : extraUninstallCommands) {
-                    uninstallCommands += command + "\n";
+
+            String postInstallCommands = "";
+            if (extraPostInstallCommands != null) {
+                for (String command : extraPostInstallCommands) {
+                    postInstallCommands += command + "\n";
                 }
             }
-            
-            for (EmbededInstaller embededInstaller : embededInstallers) {
-                
+
+            String preUninstallCommands = "";
+            if (extraPreUninstallCommands != null) {
+                for (String command : extraPreUninstallCommands) {
+                    preUninstallCommands += command + "\n";
+                }
+            }
+
+            String postUninstallCommands = "";
+//            if (extraPostUninstallCommands != null) {
+//                for (String command : extraPostUninstallCommands) {
+
+//                    postUninstallCommands += command + "\n";
+//                }
+//            }
+//            String embed = "";
+//            if (embededInstallers != null) {
+//                for (EmbededInstaller embededInstaller : embededInstallers) {
+//                    embed += embededInstaller.toString() + "\n";
+//                }
+//            }
+            String userDefines = "";
+            if (defines != null) {
+                for (Map.Entry<Object, Object> entry : defines.entrySet()) {
+                    final Object key = entry.getKey();
+                    final Object value = entry.getValue();
+
+                    userDefines += "\n!define " + key + " \"" + value + "\"";
+                }
             }
 
             templateContent = replace(templateContent, "@NSIS_COMPRESSOR@", compressor.toString());
             templateContent = replace(templateContent, "@NSIS_COMPRESSOR_DIC_SIZE@", "" + compressor.getDictionarySize());
             templateContent = replace(templateContent, "@NSIS_CONTACT@", contact);
+            templateContent = replace(templateContent, "@NSIS_DEFINES@", userDefines);
             templateContent = replace(templateContent, "@NSIS_DELETE_FILES@", deleteFiles.toString());
             templateContent = replace(templateContent, "@NSIS_DELETE_DIRECTORIES@", removeDirs.toString());
             templateContent = replace(templateContent, "@NSIS_DISPLAY_NAME@", displayName);
             templateContent = replace(templateContent, "@NSIS_DOWNLOAD_SITE@", "");
-            templateContent = replace(templateContent, "@NSIS_EMBEDED_INSTALLER@", );
+//            templateContent = replace(templateContent, "@NSIS_EMBEDED_INSTALLER@", embed);
             templateContent = replace(templateContent, "@NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL@", enableUninstallBeforeInstall ? "ON" : "OFF");
-            templateContent = replace(templateContent, "@NSIS_EXTRA_INSTALL_COMMANDS@", installCommands);
-            templateContent = replace(templateContent, "@NSIS_EXTRA_PREINSTALL_COMMANDS@", preInstallCommands);
-            templateContent = replace(templateContent, "@NSIS_EXTRA_UNINSTALL_COMMANDS@", uninstallCommands);
+            templateContent = replace(templateContent, "@NSIS_EXTRA_PRE_INSTALL_COMMANDS@", preInstallCommands);
+            templateContent = replace(templateContent, "@NSIS_EXTRA_POST_INSTALL_COMMANDS@", postInstallCommands);
+            templateContent = replace(templateContent, "@NSIS_EXTRA_PRE_UNINSTALL_COMMANDS@", preUninstallCommands);
+            templateContent = replace(templateContent, "@NSIS_EXTRA_POST_UNINSTALL_COMMANDS@", postUninstallCommands);
             templateContent = replace(templateContent, "@NSIS_FULL_INSTALL@", fullInstall.toString());
             templateContent = replace(templateContent, "@NSIS_HELP_LINK@", helpLink);
+            templateContent = replace(templateContent, "@NSIS_INCLUDES@", includeHeaders);
             templateContent = replace(templateContent, "@NSIS_INSTALL_DIRECTORY@", installDirectory.replace("/", "\\\\"));
             templateContent = replace(templateContent, "@NSIS_INSTALL_OPTIONS@", installOptions.getName());
             templateContent = replace(templateContent, "@NSIS_INSTALL_ROOT@", installRoot);

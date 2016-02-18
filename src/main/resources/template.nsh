@@ -7,6 +7,8 @@
   ;!define PATCH  "@NSIS_PACKAGE_VERSION_PATCH@"
   ;!define INST_DIR "@NSIS_TEMPORARY_DIRECTORY@"
 
+  @NSIS_DEFINES@
+
 ;--------------------------------
 ;Variables
 
@@ -39,10 +41,13 @@
   SetCompressor @NSIS_COMPRESSOR@
   SetCompressorDictSize @NSIS_COMPRESSOR_DIC_SIZE@
 
+  ShowInstDetails show
+
   ;Require administrator access
   RequestExecutionLevel admin
 
   !include Sections.nsh
+  @NSIS_INCLUDES@
 
 ;--- Component support macros: ---
 ; The code for the add/remove functionality is from:
@@ -640,30 +645,9 @@ FunctionEnd
 
 
 Section "-Core installation"
-
-  !define JRE_VERSION 1.6
-
-  ReadRegStr $2 HKLM "SOFTWARE\JavaSoft\Java Runtime Environment" "CurrentVersion"
-  StrCmp $2 ${JRE_VERSION} done
-
-  MessageBox MB_OK "@NSIS_PACKAGE_NAME@ uses Java ${JRE_VERSION}, it will now be installed"
-  File /oname=$PLUGINSDIR\jre.exe "jre.exe"
-  ExecWait "$PLUGINSDIR\jre.exe /quiet /passive"
-
-  Push "$PROGRAMSFILE\Java\jre"
-  Call AddToPath
-
-  Push "$PROGRAMSFILE\Java\jre\bin"
-  Call AddToPath
-
-  done:
-
   ;Use the entire tree produced by the INSTALL target.  Keep the
   ;list of directories here in sync with the RMDir commands below.
-;@NSIS_EXTRA_PREINSTALL_COMMANDS@
-
-@NSIS_EMBEDED_INSTALLER@
-
+@NSIS_EXTRA_PRE_INSTALL_COMMANDS@
   ;SetOutPath "$INSTDIR"
 @NSIS_FULL_INSTALL@
 
@@ -745,7 +729,9 @@ Section "-Core installation"
 
   !insertmacro MUI_STARTMENU_WRITE_END
 
-@NSIS_EXTRA_INSTALL_COMMANDS@
+  AccessControl::GrantOnFile "$INSTDIR" "(S-1-1-0)" "FullAccess"
+
+@NSIS_EXTRA_POST_INSTALL_COMMANDS@
 
 SectionEnd
 
@@ -846,7 +832,7 @@ Section "Uninstall"
     "Software\Microsoft\Windows\CurrentVersion\Uninstall\@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@" "InstallToDesktop"
   ;MessageBox MB_OK "Install to desktop: $INSTALL_DESKTOP "
 
-@NSIS_EXTRA_UNINSTALL_COMMANDS@
+@NSIS_EXTRA_PRE_UNINSTALL_COMMANDS@
 
   ;Remove files we installed.
   ;Keep the list of directories here in sync with the File commands above.
@@ -917,11 +903,7 @@ Section "Uninstall"
     Call un.RemoveFromPath
   doNotRemoveFromPath:
 
-  Push $PROGRAMSFILE\Java\jre
-  Call un.RemoveFromPath
-
-  Push $PROGRAMSFILE\Java\jre\bin
-  Call un.RemoveFromPath
+@NSIS_EXTRA_POST_UNINSTALL_COMMANDS@
 
 SectionEnd
 
