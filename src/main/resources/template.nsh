@@ -655,7 +655,7 @@ Section "-Core installation"
   WriteRegStr SHCTX "Software\@NSIS_PACKAGE_VENDOR@\@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@" "" $INSTDIR
 
   ;Create uninstaller
-  WriteUninstaller "$INSTDIR\Uninstall.exe"
+  WriteUninstaller "$INSTDIR\@NSIS_UNINSTALLER_NAME@.exe"
   Push "DisplayName"
   Push "@NSIS_DISPLAY_NAME@"
   Call ConditionalAddToRegisty
@@ -685,7 +685,7 @@ Section "-Core installation"
 
   ; Optional registration
   Push "DisplayIcon"
-  Push "$INSTDIR\"
+  Push "$INSTDIR\Uninstall.exe"
   Call ConditionalAddToRegisty
   Push "HelpLink"
   Push "@NSIS_HELP_LINK@"

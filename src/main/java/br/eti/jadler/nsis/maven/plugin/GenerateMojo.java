@@ -92,6 +92,13 @@ public class GenerateMojo extends AbstractMojo {
     private String displayName;
 
     /**
+     * The title displayed at the top of the installer and in the Windows
+     * Add/Remove Program control panel.
+     */
+    @Parameter(property = "nsis.uninstallerName", defaultValue = "${project.artifactId}Uninstaller")
+    private String uninstallerName;
+
+    /**
      * The name of the package file to generate, not including the extension.
      * The default value is: ${project.build.finalName}
      */
@@ -374,6 +381,7 @@ public class GenerateMojo extends AbstractMojo {
             templateContent = replace(templateContent, "@NSIS_INSTALL_DIRECTORY@", installDirectory.replace("/", "\\\\"));
             templateContent = replace(templateContent, "@NSIS_INSTALL_OPTIONS@", installOptions.getName());
             templateContent = replace(templateContent, "@NSIS_INSTALL_ROOT@", installRoot);
+//            templateContent = replace(templateContent, "@NSIS_INSTALLED_ICON_NAME@", muiIcon);
             templateContent = replace(templateContent, "@NSIS_INSTALLER_MUI_COMPONENTS_DESC@", "!define MUI_COMPONENTSPAGE_NODESC");
             templateContent = replace(templateContent, "@NSIS_MODIFY_PATH@", modifyPath ? "ON" : "OFF");
             templateContent = replace(templateContent, "@NSIS_MUI_HEADERIMAGE_BITMAP@", "!define MUI_HEADERIMAGE_BITMAP " + muiHeader);
@@ -387,6 +395,7 @@ public class GenerateMojo extends AbstractMojo {
             templateContent = replace(templateContent, "@NSIS_PACKAGE_VERSION@", packageVersion);
             templateContent = replace(templateContent, "@NSIS_RESOURCE_FILE_LICENSE@", licenseMacro);
             templateContent = replace(templateContent, "@NSIS_SPLASH_IMAGE@", splash);
+            templateContent = replace(templateContent, "@NSIS_UNINSTALLER_NAME@", uninstallerName);
             templateContent = replace(templateContent, "@NSIS_URL_INFO_ABOUT@", urlInfoAbout);
 
             Files.write(file.toPath(), templateContent.getBytes(charset));
