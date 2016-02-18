@@ -95,7 +95,7 @@ public class GenerateMojo extends AbstractMojo {
      * The title displayed at the top of the installer and in the Windows
      * Add/Remove Program control panel.
      */
-    @Parameter(property = "nsis.uninstallerName", defaultValue = "${project.artifactId}Uninstaller")
+    @Parameter(property = "nsis.uninstallerName", defaultValue = "Uninstall")
     private String uninstallerName;
 
     /**
