@@ -666,7 +666,7 @@ Section "-Core installation"
   Push "@NSIS_PACKAGE_VENDOR@"
   Call ConditionalAddToRegisty
   Push "UninstallString"
-  Push "$INSTDIR\Uninstall.exe"
+  Push "$INSTDIR\@NSIS_UNINSTALLER_NAME@.exe"
   Call ConditionalAddToRegisty
   Push "NoRepair"
   Push "1"
@@ -685,7 +685,7 @@ Section "-Core installation"
 
   ; Optional registration
   Push "DisplayIcon"
-  Push "$INSTDIR\Uninstall.exe"
+  Push "$INSTDIR\@NSIS_UNINSTALLER_NAME@.exe"
   Call ConditionalAddToRegisty
   Push "HelpLink"
   Push "@NSIS_HELP_LINK@"
@@ -703,7 +703,7 @@ Section "-Core installation"
   CreateDirectory "$SMPROGRAMS\$STARTMENU_FOLDER"
 ;@NSIS_CREATE_ICONS@
 ;@NSIS_CREATE_ICONS_EXTRA@
-  CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
+  CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\@NSIS_UNINSTALLER_NAME@.lnk" "$INSTDIR\@NSIS_UNINSTALLER_NAME@.exe"
 
   ;Read a value from an InstallOptions INI file
   !insertmacro MUI_INSTALLOPTIONS_READ $DO_NOT_ADD_TO_PATH "@NSIS_INSTALL_OPTIONS@" "Field 2" "State"
@@ -845,7 +845,7 @@ Section "Uninstall"
 !endif
 
   ;Remove the uninstaller itself.
-  Delete "$INSTDIR\Uninstall.exe"
+  Delete "$INSTDIR\@NSIS_UNINSTALLER_NAME@.exe"
   DeleteRegKey SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@"
 
   ;Remove the installation directory if it is empty.
@@ -859,7 +859,7 @@ Section "Uninstall"
 
   !insertmacro MUI_STARTMENU_GETFOLDER Application $MUI_TEMP
 
-  Delete "$SMPROGRAMS\$MUI_TEMP\Uninstall.lnk"
+  Delete "$SMPROGRAMS\$MUI_TEMP\@NSIS_UNINSTALLER_NAME@.lnk"
 ;@NSIS_DELETE_ICONS@
 ;@NSIS_DELETE_ICONS_EXTRA@
 
@@ -879,7 +879,7 @@ Section "Uninstall"
   ; If the user changed the shortcut, then untinstall may not work. This should
   ; try to fix it.
   StrCpy $MUI_TEMP "$START_MENU"
-  Delete "$SMPROGRAMS\$MUI_TEMP\Uninstall.lnk"
+  Delete "$SMPROGRAMS\$MUI_TEMP\@NSIS_UNINSTALLER_NAME@.lnk"
 ;@NSIS_DELETE_ICONS_EXTRA@
 
   ;Delete empty start menu parent diretories
@@ -938,8 +938,8 @@ nosplash:
 ;Run the uninstaller
 uninst:
   ClearErrors
-  StrLen $2 "\Uninstall.exe"
-  StrCpy $3 $0 -$2 # remove "\Uninstall.exe" from UninstallString to get path
+  StrLen $2 "\@NSIS_UNINSTALLER_NAME@.exe"
+  StrCpy $3 $0 -$2 # remove "\@NSIS_UNINSTALLER_NAME@.exe" from UninstallString to get path
   ExecWait '$0 _?=$3' ;Do not copy the uninstaller to a temp file
 
   IfErrors uninst_failed inst
