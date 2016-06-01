@@ -293,11 +293,13 @@ public class GenerateMojo extends AbstractMojo {
                     if (!fullInstall.contains(includedFile)) {
                         int lastIndexOf = includedFile.lastIndexOf("/");
                         if (lastIndexOf > 0) {
-                            fullInstall.add("\tSetOutPath \"\\$INSTDIR\\\\" + includedFile.substring(0, lastIndexOf) + "\"\n");
+                            fullInstall.add("\tSetOutPath \"\\$INSTDIR\\\\" + includedFile.replaceAll("/", "\\\\\\\\").substring(0, lastIndexOf + 1) + "\"\n");
                         } else {
                             fullInstall.add("\tSetOutPath \"\\$INSTDIR\"\n");
                         }
+                        
                         String str = includedFile.replace("/", "\\\\");
+                        
                         fullInstall.add("\tFile /r \"" + str + "\"\n");
                         deleteFiles.add("\tDelete \"\\$INSTDIR\\\\" + str + "\"\n");
                     }
@@ -384,10 +386,10 @@ public class GenerateMojo extends AbstractMojo {
 //            templateContent = replace(templateContent, "@NSIS_INSTALLED_ICON_NAME@", muiIcon);
             templateContent = replace(templateContent, "@NSIS_INSTALLER_MUI_COMPONENTS_DESC@", "!define MUI_COMPONENTSPAGE_NODESC");
             templateContent = replace(templateContent, "@NSIS_MODIFY_PATH@", modifyPath ? "ON" : "OFF");
-            templateContent = replace(templateContent, "@NSIS_MUI_HEADERIMAGE_BITMAP@", "!define MUI_HEADERIMAGE_BITMAP " + muiHeader);
-            templateContent = replace(templateContent, "@NSIS_MUI_ICON@", "!define MUI_ICON " + muiIcon);
-            templateContent = replace(templateContent, "@NSIS_MUI_UNICON@", "!define MUI_UNICON " + muiUnIcon);
-            templateContent = replace(templateContent, "@NSIS_MUI_WELCOMEFINISHPAGE_BITMAP@", "!define MUI_WELCOMEFINISHPAGE_BITMAP " + muiPanel);
+            templateContent = replace(templateContent, "@NSIS_MUI_HEADERIMAGE_BITMAP@", "!define MUI_HEADERIMAGE_BITMAP \"" + muiHeader + "\"");
+            templateContent = replace(templateContent, "@NSIS_MUI_ICON@", "!define MUI_ICON \"" + muiIcon + "\"");
+            templateContent = replace(templateContent, "@NSIS_MUI_UNICON@", "!define MUI_UNICON \"" + muiUnIcon + "\"");
+            templateContent = replace(templateContent, "@NSIS_MUI_WELCOMEFINISHPAGE_BITMAP@", "!define MUI_WELCOMEFINISHPAGE_BITMAP \"" + muiPanel + "\"");
             templateContent = replace(templateContent, "@NSIS_OUTPUT_FILE_NAME@", outputFileName);
             templateContent = replace(templateContent, "@NSIS_PACKAGE_INSTALL_REGISTRY_KEY@", displayName);
             templateContent = replace(templateContent, "@NSIS_PACKAGE_NAME@", packageName);
